@@ -1,0 +1,17 @@
+{
+    "name": "fm-labs/cakephp-facebook",
+    "description": "CakePHP Facebook Plugin",
+    "minimum-stability": "stable",
+    "authors": [
+        {
+            "name": "Florian Beisskammer",
+            "email": "flowmotionlabs@gmail.com"
+        }
+    ],
+    "require": {
+        "facebook/php-sdk": "@stable"
+    },
+    "config": {
+        "vendor-dir": "Vendor"
+    }
+}
