@@ -12,13 +12,13 @@ class FacebookGraphSource extends DataSource {
      * @deprecated Use facebook config file instead
      */
     protected $_baseConfig = array(
-		'appId' => '',
-		'appSecret' => ''
-	);
-	
-	/**
-	 * @var FacebookApi
-	 */
+        'appId' => '',
+        'appSecret' => ''
+    );
+
+    /**
+     * @var FacebookApi
+     */
 	public $FB;
 
     /**
@@ -29,8 +29,8 @@ class FacebookGraphSource extends DataSource {
      */
     public function __construct($config = array()) {
 
-        parent::__construct($config);
         $this->FB = FacebookApi::getInstance();
+        parent::__construct($config);
     }
 
     /**
