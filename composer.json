@@ -1,6 +1,7 @@
 {
     "name": "fm-labs/cakephp-facebook",
     "description": "CakePHP Facebook Plugin",
+    "type": "cakephp-plugin",
     "minimum-stability": "stable",
     "authors": [
         {
