@@ -2,6 +2,7 @@
 App::uses('FacebookApi', 'Facebook.Lib');
 App::uses('Router','Routing');
 App::uses('Hash','Utility');
+App::uses('CakeSession','Model/Datasource');
 
 /**
  * FacebookConnect
@@ -24,7 +25,9 @@ App::uses('Hash','Utility');
  *
  */
 class FacebookConnect {
-	
+
+    static public $sessionKey = 'Facebook.User';
+
 	/**
 	 * Facebook api instance
 	 * 
@@ -46,7 +49,11 @@ class FacebookConnect {
 	 * @var array
 	 */
 	public $perms;
-	
+
+    /**
+     * @var string
+     */
+    protected $_accessToken;
 
 	/**
 	 * Get singleton instance
@@ -131,14 +138,35 @@ class FacebookConnect {
     public function connect() {
 
         $uid = $this->FacebookApi->getUser();
+        $accessToken = $this->FacebookApi->getAccessToken();
+
+        // restore user info from session, if available
+        $this->restoreUserFromSession();
+
+        // check if accessToken has changed (e.g. after requesting/revoking permissions)
+        if (!$this->_accessToken !== $accessToken) {
+            // reset without destroying the facebook session
+            $this->disconnect(false);
+        }
 
         // connected and active session
         // we are all set. just return the cached user data.
         if ($uid && $this->user) {
-            //@todo check if uids match
-            //@todo validate accessToken.
-            //@todo store expiration date in session and check token periodically
-            return true;
+
+            // Check UserIds
+            if ($uid === $this->user['id']) {
+                //@todo validate accessToken.
+                //@todo proposal: store expiration date in session and check token periodically
+                return true;
+            }
+
+            // UserIds do not match
+            // reset without destroying the facebook session
+            // and update user info
+            $this->disconnect(false);
+            $this->log(__d('facebook','UserIds do not match. Expected: %s / Actual: %s. Disconnect.',
+                $this->user['id'], $uid),'warning');
+
         }
         // not connected but active session
         // reset the session
@@ -147,19 +175,22 @@ class FacebookConnect {
             $this->disconnect(true);
             return false;
         }
+        // not connected
+        elseif (!$uid) {
+            return false;
+        }
+
+
+        //@todo confirm identity/verify access token
+        //@see https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/#confirm
+
         // connected but not in session
         // retrieve data from facebook
-        elseif ($uid) {
-            //@todo confirm identity/verify access token
-            //@see https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/#confirm
+        $this->updateUserInfo();
+        $this->log(__d('facebook','Connected user with ID %s',$uid),'info');
 
-            $this->log(__d('facebook','Connected user with ID %s',$uid),'info');
-            $this->updateUserInfo();
-
-            //@todo dispatch event facebook.connect
-            return true;
-        }
-        return false;
+        //@todo dispatch event facebook.connect
+        return true;
     }
 
     /**
@@ -182,6 +213,7 @@ class FacebookConnect {
 
         $this->setUser(null);
         $this->setPermissions(array());
+        $this->deleteUserFromSession();
         //@todo dispatch event facebook.disconnect
     }
 
@@ -216,8 +248,49 @@ class FacebookConnect {
 
         $this->setUser($user);
         $this->setPermissions($perms);
+        $this->storeUserInSession();
 
         //@todo dispatch event facebook.user
+    }
+
+
+    /**
+     * Restore user info from session
+     *
+     * @return void
+     */
+    protected function restoreUserFromSession() {
+        if (CakeSession::check(self::$sessionKey)) {
+            list($user,$perms, $accessToken) = CakeSession::read(self::$sessionKey);
+            $this->setUser($user);
+            $this->setPermissions($perms);
+            $this->_accessToken = $accessToken;
+        }
+    }
+
+    /**
+     * Store user info in session
+     *
+     * @return void
+     */
+    protected function storeUserInSession() {
+        if (!$this->user)
+            return;
+
+        CakeSession::write(self::$sessionKey, array(
+            $this->user,
+            $this->perms,
+            $this->FacebookApi->getAccessToken()
+        ));
+    }
+
+    /**
+     * Delete user info from session
+     *
+     * @return void
+     */
+    protected function deleteUserFromSession() {
+        CakeSession::delete(self::$sessionKey);
     }
 
     /**

@@ -27,7 +27,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
         'scope' => array(), // not recommended
         'recursive' => 0,
         'contain' => null,
-        'defaultPermissions' => array(),
+        'defaultPermissions' => array('email'),
     );
 
 	/**
@@ -40,7 +40,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
 	/**
 	 * @see BaseAuthenticate::getUser()
 	 */
-	public function getUser($request) {
+	public function getUser(CakeRequest $request) {
 
 		$fbUser = FacebookConnect::user();
 
@@ -78,6 +78,22 @@ class FacebookAuthenticate extends BaseAuthenticate {
 
         // Obviously, the current user is not stored in the userModel
         // Sync, if possible
+        /*
+         * {
+              "id": "123456789",
+              "name": "John Doe",
+              "first_name": "John",
+              "last_name": "Doe",
+              "link": "https://www.facebook.com/john.doe",
+              "username": "john.doe",
+              "gender": "male",
+              "timezone": 1,
+              "locale": "en_US",
+              "verified": true,
+              "updated_time": "2013-01-01T22:22:22+0000"
+            }
+         */
+        //@todo Create a 'syncFacebookUser' fallback
         if (method_exists($Model, 'syncFacebookUser')) {
             return $Model->syncFacebookUser($fbUser, $this->settings);
         }
