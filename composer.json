@@ -9,9 +9,13 @@
         }
     ],
     "require": {
+        "composer/installers": "~1.0",
         "facebook/php-sdk": "@stable"
     },
     "config": {
         "vendor-dir": "Vendor"
+    },
+    "extra": {
+        "installer-name": "Facebook"
     }
 }
