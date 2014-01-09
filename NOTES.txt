@@ -1,0 +1,9 @@
+TROUBLESHOOTING
+===============
+
+# Facebook Login dialog not redirecting in FF (seeing a blank page with the facebook header)
+
+This might be caused by one of the FF plugins.
+Most likely NoScript (check ABE setting) or AdBlock AddOn
+
+http://community.spiceworks.com/topic/97037-how-to-configure-firefox-plugin-noscript
