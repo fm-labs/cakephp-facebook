@@ -92,9 +92,9 @@ class FacebookComponent extends Component {
 		if ($this->useAuth
                 && !CakeSession::read('FacebookConnect.authLogout')
 				&& !$controller->Auth->user() 
-				&& FacebookConnect::getUser()) 
+				&& $this->FacebookConnect->getUser())
 		{
-			$controller->Auth->login(FacebookConnect::getUser());
+			$controller->Auth->login($this->FacebookConnect->getUser());
 		}
         */
 	}
