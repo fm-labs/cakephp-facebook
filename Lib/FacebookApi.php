@@ -12,44 +12,6 @@ class FacebookApi {
 	public $FB;
 
 /**
- * Get singleton instance
- *
- * @return FacebookApi
- */
-	public static function &getInstance() {
-		static $fbinstance = array();
-		if (!$fbinstance) {
-			$class = __CLASS__;
-			$fbinstance[0] = new $class();
-		}
-		return $fbinstance[0];
-	}
-
-/**
- * Static Wrapper
- * Call Facebook methods statically
- *
- * @param $method
- * @param $params
- * @return mixed
- */
-	public static function __callStatic($method, $params) {
-		$_this = FacebookApi::getInstance();
-		return call_user_func_array(array($_this->FB, $method), $params);
-	}
-
-/**
- * Wrapper for Facebook methods
- *
- * @param $method
- * @param $params
- * @return mixed
- */
-	public function __call($method, $params) {
-		return call_user_func_array(array($this->FB, $method), $params);
-	}
-
-/**
  * Constructor
  *
  * @throws Exception
@@ -79,6 +41,44 @@ class FacebookApi {
 		);
 
 		$this->FB = new Facebook($this->config);
+	}
+
+/**
+ * Wrapper for Facebook methods
+ *
+ * @param $method
+ * @param $params
+ * @return mixed
+ */
+	public function __call($method, $params) {
+		return call_user_func_array(array($this->FB, $method), $params);
+	}
+
+/**
+ * Get singleton instance
+ *
+ * @return FacebookApi
+ */
+	public static function &getInstance() {
+		static $fbinstance = array();
+		if (!$fbinstance) {
+			$class = __CLASS__;
+			$fbinstance[0] = new $class();
+		}
+		return $fbinstance[0];
+	}
+
+/**
+ * Static Wrapper
+ * Call Facebook methods statically
+ *
+ * @param $method
+ * @param $params
+ * @return mixed
+ */
+	public static function __callStatic($method, $params) {
+		$_this = FacebookApi::getInstance();
+		return call_user_func_array(array($_this->FB, $method), $params);
 	}
 
 /**

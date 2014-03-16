@@ -63,7 +63,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
 		// Check if we have a user with the current facebook uid in the userModel
 		// @todo refactor this part as an event or the model should be responsible for uid lookup
 		$conditions = array(
-			$model . '.' . $fields['facebook_uid'] => $fbUser['id']
+			$Model->alias . '.' . $fields['facebook_uid'] => $fbUser['id']
 		);
 
 		if (!empty($this->settings['scope'])) {

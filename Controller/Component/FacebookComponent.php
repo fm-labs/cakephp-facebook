@@ -103,7 +103,12 @@ class FacebookComponent extends Component {
  * @return void
  */
 	public function connect() {
-		$this->FacebookConnect->connect();
+		try {
+			$this->FacebookConnect->connect();
+		} catch (Exception $e) {
+			debug($e);
+			throw $e;
+		}
 	}
 
 /**
