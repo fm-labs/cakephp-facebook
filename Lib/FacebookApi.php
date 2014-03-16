@@ -1,5 +1,15 @@
 <?php
-class FacebookApi extends Facebook {
+class FacebookApi {
+
+/**
+ * @var array
+ */
+	public $config;
+
+/**
+ * @var Facebook
+ */
+	public $FB;
 
 /**
  * Get singleton instance
@@ -15,16 +25,45 @@ class FacebookApi extends Facebook {
 		return $fbinstance[0];
 	}
 
+/**
+ * Static Wrapper
+ * Call Facebook methods statically
+ *
+ * @param $method
+ * @param $params
+ * @return mixed
+ */
+	public static function __callStatic($method, $params) {
+		$_this = FacebookApi::getInstance();
+		return call_user_func_array(array($_this->FB, $method), $params);
+	}
+
+/**
+ * Wrapper for Facebook methods
+ *
+ * @param $method
+ * @param $params
+ * @return mixed
+ */
+	public function __call($method, $params) {
+		return call_user_func_array(array($this->FB, $method), $params);
+	}
+
+/**
+ * Constructor
+ *
+ * @throws Exception
+ */
 	public function __construct() {
 		if (!class_exists('Facebook')) {
-			throw new Exception('Facebook library not found');
+			throw new Exception('Facebook PHP SDK not found');
 		}
 
 		if (!Configure::read('Facebook')) {
-			throw new Exception('Facebook configuration is not present');
+			throw new Exception('Facebook configuration not loaded');
 		}
 
-		$config = array(
+		$this->config = array(
 			//BaseFacebook params
 			'appId' => Configure::read('Facebook.appId'),
 			'secret' => Configure::read('Facebook.appSecret'),
@@ -39,7 +78,7 @@ class FacebookApi extends Facebook {
 			//'log' => true,
 		);
 
-		parent::__construct($config);
+		$this->FB = new Facebook($this->config);
 	}
 
 /**
@@ -90,19 +129,11 @@ class FacebookApi extends Facebook {
  * Log wrapper
  *
  * @param $msg
+ * @deprecated
  */
 	public static function errorLog($msg) {
-		parent::errorLog($msg);
-
+		Facebook::errorLog($msg);
 		CakeLog::error($msg, array('facebook'));
 	}
-
-	/*
-	static public function __callstatic($method, $params) {
-		die($method);
-		$_this = FacebookApi::getInstance();
-		return call_user_func_array(array($_this,$method), $params);
-	}
-	*/
 
 }
