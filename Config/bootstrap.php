@@ -3,6 +3,6 @@
 
 //@todo Check Facebook config
 
-//@todo Setup facebook log
+//@todo Setup facebook cache
 
 //@todo Setup facebook log
