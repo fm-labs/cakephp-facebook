@@ -21,9 +21,6 @@ class FacebookAuthenticate extends BaseAuthenticate {
  */
 	public $settings = array(
 		'userModel' => 'User',
-		'fields' => array(
-			'facebook_uid' => 'facebook_uid',
-		),
 		'scope' => array(), // not recommended
 		'recursive' => 0,
 		'contain' => null,
@@ -48,6 +45,8 @@ class FacebookAuthenticate extends BaseAuthenticate {
 			return false;
 		}
 
+		// @todo check default permissions
+
 		// A facebook user is connected, but we won't use a userModel
 		// to store/sync user data. So the facebook user info is used
 		// as application user data
@@ -55,31 +54,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
 			return $fbUser;
 		}
 
-		$userModel = $this->settings['userModel'];
-		list(, $model) = pluginSplit($userModel);
-		$fields = $this->settings['fields'];
-		$Model = ClassRegistry::init($userModel);
-
-		// Check if we have a user with the current facebook uid in the userModel
-		// @todo refactor this part as an event or the model should be responsible for uid lookup
-		$conditions = array(
-			$Model->alias . '.' . $fields['facebook_uid'] => $fbUser['id']
-		);
-
-		if (!empty($this->settings['scope'])) {
-			$conditions = array_merge($conditions, $this->settings['scope']);
-		}
-		$result = $Model->find('first', array(
-			'conditions' => $conditions,
-			'recursive' => $this->settings['recursive'],
-			'contain' => $this->settings['contain'],
-		));
-		if ($result) {
-			return $result[$Model->alias];
-		}
-
-		// Obviously, the current user is not stored in the userModel
-		// Sync, if possible
+		// Retrieve user data for fb-user from model
 		/*
 		 * {
 			  "id": "123456789",
@@ -95,13 +70,31 @@ class FacebookAuthenticate extends BaseAuthenticate {
 			  "updated_time": "2013-01-01T22:22:22+0000"
 			}
 		 */
-		//@todo Create a 'syncFacebookUser' fallback
-		if (method_exists($Model, 'syncFacebookUser')) {
-			return $Model->syncFacebookUser($fbUser, $this->settings);
+		$Model = ClassRegistry::init($this->settings['userModel']);
+		if (method_exists($Model, 'getFacebookUser')) {
+			$user = call_user_func(array($Model, 'getFacebookUser'), $fbUser, $this->settings);
+		} else {
+			$user = $this->_getFacebookUser($Model, $fbUser);
+		}
 
-		} elseif (Configure::read('debug') > 0) {
-			throw new Exception(__("Model '%s' has not method 'syncFacebookUser(\$fbUser, \$settings')",
-				$userModel));
+		return $user;
+	}
+
+	protected function _getFacebookUser(Model $Model, $fbUser) {
+		$conditions = array(
+			$Model->alias . '.facebook_uid' => $fbUser['id']
+		);
+
+		if (!empty($this->settings['scope'])) {
+			$conditions = array_merge($conditions, $this->settings['scope']);
+		}
+		$result = $Model->find('first', array(
+			'conditions' => $conditions,
+			'recursive' => $this->settings['recursive'],
+			'contain' => $this->settings['contain'],
+		));
+		if ($result) {
+			return $result[$Model->alias];
 		}
 
 		return false;
