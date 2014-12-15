@@ -86,6 +86,9 @@ class FacebookConnect {
 	public function __construct() {
 		$this->FacebookApi = FacebookApi::getInstance();
 		//$this->connect();
+
+        // restore user info from session, if available
+        $this->restoreSession();
 	}
 
 /**
@@ -137,9 +140,6 @@ class FacebookConnect {
 	public function connect() {
 		$uid = $this->FacebookApi->getUser();
 		$accessToken = $this->FacebookApi->getAccessToken();
-
-		// restore user info from session, if available
-		$this->restoreUserFromSession();
 
 		// check if accessToken has changed (e.g. after requesting/revoking permissions)
 		if (!$this->_accessToken !== $accessToken) {
@@ -209,7 +209,7 @@ class FacebookConnect {
 
 		$this->setUser(null);
 		$this->setPermissions(array());
-		$this->deleteUserFromSession();
+		$this->deleteSession();
 		//@todo dispatch event facebook.disconnect
 	}
 
@@ -243,7 +243,7 @@ class FacebookConnect {
 
 		$this->setUser($user);
 		$this->setPermissions($perms);
-		$this->storeUserInSession();
+		$this->updateSession();
 
 		//@todo dispatch event facebook.user
 	}
@@ -253,12 +253,12 @@ class FacebookConnect {
  *
  * @return void
  */
-	protected function restoreUserFromSession() {
+	protected function restoreSession() {
 		if (CakeSession::check(self::$sessionKey)) {
-			list($user, $perms, $accessToken) = CakeSession::read(self::$sessionKey);
-			$this->setUser($user);
-			$this->setPermissions($perms);
-			$this->_accessToken = $accessToken;
+			$session = CakeSession::read(self::$sessionKey);
+			$this->setUser($session['User']);
+			$this->setPermissions($session['Permission']);
+			$this->_accessToken = $session['Auth']['access_token'];
 		}
 	}
 
@@ -267,15 +267,19 @@ class FacebookConnect {
  *
  * @return void
  */
-	protected function storeUserInSession() {
+	protected function updateSession() {
 		if (!$this->user) {
 			return;
 		}
 
 		CakeSession::write(self::$sessionKey, array(
-			$this->user,
-			$this->perms,
-			$this->FacebookApi->getAccessToken()
+            'Auth' => array(
+                'access_token' => $this->FacebookApi->getAccessToken(),
+                //'now' => time(),
+                //'expire_in' => time() + HOUR
+            ),
+			'User' => $this->user,
+			'Permission' => $this->perms,
 		));
 	}
 
@@ -284,7 +288,7 @@ class FacebookConnect {
  *
  * @return void
  */
-	protected function deleteUserFromSession() {
+	protected function deleteSession() {
 		CakeSession::delete(self::$sessionKey);
 	}
 
