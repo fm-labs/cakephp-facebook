@@ -1,7 +1,7 @@
 <?php
 Configure::load('facebook');
 
-App::uses('AppHelper','View/Helper');
+App::uses('AppHelper', 'View/Helper');
 App::uses('FacebookConnect', 'Facebook.Lib');
 
 /**
@@ -117,7 +117,6 @@ class FacebookHelper extends AppHelper {
 	public function sdk() {
 		$html = <<<SDK
 <div id="fb-root"></div>
-<!--
 <script>
 window.fbAsyncInit = function() {
     // init the FB JS SDK
@@ -130,7 +129,6 @@ window.fbAsyncInit = function() {
     });
   };
 </script>
-//-->
 <script>(function(d, s, id) {
   var js, fjs = d.getElementsByTagName(s)[0];
   if (d.getElementById(id)) return;

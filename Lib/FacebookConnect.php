@@ -98,6 +98,8 @@ class FacebookConnect {
  */
 	public function getLoginUrl($redirectUrl = null, $scope = array()) {
 		$params = array();
+
+        $scope = (array)Configure::read('Facebook.scope') + $scope;
 		if ($scope) {
 			$params['scope'] = (is_array($scope)) ? $scope : explode(',', trim($scope));
 		}

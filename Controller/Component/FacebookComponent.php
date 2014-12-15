@@ -23,7 +23,7 @@ class FacebookComponent extends Component {
  *
  * @var bool
  */
-	public $autoConnect = true;
+	public $autoConnect = false;
 
 /**
  * Automatically load FacebookHelper before rendering

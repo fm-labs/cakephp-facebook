@@ -31,6 +31,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @see BaseAuthenticate::authenticate()
  */
 	public function authenticate(CakeRequest $request, CakeResponse $response) {
+        debug("FacebookAuthenticate::authenticate()");
 		return $this->getUser($request);
 	}
 
@@ -38,67 +39,68 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @see BaseAuthenticate::getUser()
  */
 	public function getUser(CakeRequest $request) {
+        debug("FacebookAuthenticate::getUser()");
 		$fbUser = FacebookConnect::user();
+        debug($fbUser);
 
 		// No facebook user is connected
-		if (!$fbUser) {
+        /*
+         * {
+              "id": "123456789",
+              "name": "John Doe",
+              "first_name": "John",
+              "last_name": "Doe",
+              "link": "https://www.facebook.com/john.doe",
+              "username": "john.doe",
+              "gender": "male",
+              "timezone": 1,
+              "locale": "en_US",
+              "verified": true,
+              "updated_time": "2013-01-01T22:22:22+0000"
+            }
+         */
+
+        if (!$fbUser) {
 			return false;
 		}
 
 		// @todo check default permissions
 
-		// A facebook user is connected, but we won't use a userModel
-		// to store/sync user data. So the facebook user info is used
-		// as application user data
+		// A facebook user is connected, but no user model selected
+        // So return facebook user info
 		if (!$this->settings['userModel']) {
 			return $fbUser;
 		}
 
-		// Retrieve user data for fb-user from model
-		/*
-		 * {
-			  "id": "123456789",
-			  "name": "John Doe",
-			  "first_name": "John",
-			  "last_name": "Doe",
-			  "link": "https://www.facebook.com/john.doe",
-			  "username": "john.doe",
-			  "gender": "male",
-			  "timezone": 1,
-			  "locale": "en_US",
-			  "verified": true,
-			  "updated_time": "2013-01-01T22:22:22+0000"
-			}
-		 */
-		$Model = ClassRegistry::init($this->settings['userModel']);
-		if (method_exists($Model, 'getFacebookUser')) {
-			$user = call_user_func(array($Model, 'getFacebookUser'), $fbUser, $this->settings);
-		} else {
-			$user = $this->_getFacebookUser($Model, $fbUser);
-		}
+        return $this->_findFacebookUser($fbUser);
 
-		return $user;
 	}
 
-	protected function _getFacebookUser(Model $Model, $fbUser) {
-		$conditions = array(
-			$Model->alias . '.facebook_uid' => $fbUser['id']
-		);
+    /**
+     * Find user by facebook user info the cakephp way
+     *
+     * @param $fbUser
+     * @return mixed
+     */
+    protected function _findFacebookUser($fbUser) {
+        $Model = ClassRegistry::init($this->settings['userModel']);
+        if (!$Model->Behaviors->loaded('FacebookAuthUser')) {
+            $config = $this->settings;
+            unset($config['userModel']);
+            //unset($config['sync']);
+            $Model->Behaviors->load('Facebook.FacebookAuthUser', $config);
+        }
 
-		if (!empty($this->settings['scope'])) {
-			$conditions = array_merge($conditions, $this->settings['scope']);
-		}
-		$result = $Model->find('first', array(
-			'conditions' => $conditions,
-			'recursive' => $this->settings['recursive'],
-			'contain' => $this->settings['contain'],
-		));
-		if ($result) {
-			return $result[$Model->alias];
-		}
+        $userId = $Model->syncFacebookUser($fbUser);
 
-		return false;
-	}
+        debug("AuthUserId For FacebookUid:");
+        debug($userId);
+
+        if (!$userId) {
+            return false;
+        }
+        return $this->_findUser(array($Model->alias . '.' . $Model->primaryKey => $userId));
+    }
 
 /**
  * @see BaseAuthenticate::logout()
