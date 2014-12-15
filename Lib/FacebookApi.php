@@ -96,12 +96,12 @@ class FacebookApi {
  * @return FacebookApi
  */
 	public static function &getInstance() {
-		static $fbinstance = array();
-		if (!$fbinstance) {
+		static $instance = array();
+		if (!$instance) {
 			$class = __CLASS__;
-			$fbinstance[0] = new $class();
+			$instance[0] = new $class();
 		}
-		return $fbinstance[0];
+		return $instance[0];
 	}
 
 /**
