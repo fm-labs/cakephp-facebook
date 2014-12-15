@@ -199,7 +199,7 @@ class FacebookConnect {
  * @param bool $destroyFacebookSession Set to TRUE to destroy facebook session
  * @return void
  */
-	public function disconnect($destroyFacebookSession = true) {
+	public function disconnect($destroyFacebookSession = false) {
 		$this->log(__d('facebook', "Disconnecting user %s from facebook (destroy: %s)",
 			$this->user('id'), $destroyFacebookSession), 'notice');
 
