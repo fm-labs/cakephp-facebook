@@ -1,4 +1,23 @@
 <?php
+/**
+ * Class FacebookApi
+ *
+ * A CakePHP wrapper for the facebook-php-sdk
+ *
+ * @method api()
+ * @method destroySession()
+ * @method getAccessToken()
+ * @method getAppId()
+ * @method getAppSecret()
+ * @method getApiSecret()
+ * @method getApplicationAccessToken()
+ * @method getLoginUrl()
+ * @method getLoginStatusUrl()
+ * @method getLogoutUrl()
+ * @method getUser()
+ * @method setAccessToken()
+ * @method setExtendedAccessToken()
+ */
 class FacebookApi {
 
     const API_VERSION_V1 = 1;
