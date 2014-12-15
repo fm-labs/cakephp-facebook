@@ -40,6 +40,15 @@ class FacebookApi {
 			//'log' => true,
 		);
 
+        Facebook::$DOMAIN_MAP = array(
+            'api'         => 'https://api.facebook.com/v2.0/',
+            'api_video'   => 'https://api-video.facebook.com/v2.0/',
+            'api_read'    => 'https://api-read.facebook.com/v2.0/',
+            'graph'       => 'https://graph.facebook.com/v2.0/',
+            'graph_video' => 'https://graph-video.facebook.com/v2.0/',
+            'www'         => 'https://www.facebook.com/v2.0/',
+        );
+
 		$this->FB = new Facebook($this->config);
 	}
 

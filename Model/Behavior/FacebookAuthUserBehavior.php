@@ -11,10 +11,7 @@ class FacebookAuthUserBehavior extends ModelBehavior {
     protected $_defaultSettings = array(
         'fields' => array(
             'facebook_uid' => 'facebook_uid'
-        ),
-        'scope' => array(),
-        'recursive' => 0,
-        'contain' => null,
+        )
     );
 
     public function setup(Model $Model, $settings = array()) {
@@ -40,6 +37,8 @@ class FacebookAuthUserBehavior extends ModelBehavior {
             $Model->alias . '.' . $settings['fields']['facebook_uid'] => $fbUser['id']
         );
 
+        debug("FacebookAuthUser: Sync facebook user with id " . $fbUser['id']);
+
         $user = $Model->find('first', array(
             'fields' => array($Model->primaryKey),
             'conditions' => $conditions,
@@ -54,6 +53,8 @@ class FacebookAuthUserBehavior extends ModelBehavior {
             return call_user_func(array($Model, 'registerFacebookUser'), $fbUser);
         }
 
+        debug($user);
+
         return $user[$Model->alias][$Model->primaryKey];
     }
 
@@ -66,7 +67,9 @@ class FacebookAuthUserBehavior extends ModelBehavior {
     public function registerFacebookUser(Model $Model, $fbUser)
     {
         debug("FacebookAuthUser: Register user with facebook uid " . $fbUser['id']);
+        debug("FacebookAuthUser: Model has no method 'registerFacebookUser()'");
 
+        /*
         $fbUid = $fbUser['id'];
         unset($fbUser['id']);
 
@@ -79,6 +82,7 @@ class FacebookAuthUserBehavior extends ModelBehavior {
         if ($Model->save(array($Model->alias => $fbUser))) {
             return $Model->id;
         }
+        */
 
         return false;
     }

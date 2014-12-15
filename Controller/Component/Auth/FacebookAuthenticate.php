@@ -20,12 +20,19 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @var array
  */
 	public $settings = array(
-		'userModel' => 'User',
-		'scope' => array(), // not recommended
+        'userModel' => 'User',
+        'fields' => array(
+            'facebook_uid' => 'facebook_uid'
+        ),
+		'scope' => array(),
 		'recursive' => 0,
 		'contain' => null,
-		'defaultPermissions' => array('email'),
+		'defaultPermissions' => array(),
 	);
+
+    public function __construct(ComponentCollection $collection, $settings) {
+        parent::__construct($collection, $settings);
+    }
 
 /**
  * @see BaseAuthenticate::authenticate()
@@ -73,7 +80,6 @@ class FacebookAuthenticate extends BaseAuthenticate {
 		}
 
         return $this->_findFacebookUser($fbUser);
-
 	}
 
     /**
@@ -84,22 +90,47 @@ class FacebookAuthenticate extends BaseAuthenticate {
      */
     protected function _findFacebookUser($fbUser) {
         $Model = ClassRegistry::init($this->settings['userModel']);
+
+        // attach FacebookAuthUser behavior
         if (!$Model->Behaviors->loaded('FacebookAuthUser')) {
-            $config = $this->settings;
-            unset($config['userModel']);
-            //unset($config['sync']);
+            $config = array(
+                'fields' => $this->settings['fields']
+            );
             $Model->Behaviors->load('Facebook.FacebookAuthUser', $config);
         }
 
-        $userId = $Model->syncFacebookUser($fbUser);
-
-        debug("AuthUserId For FacebookUid:");
-        debug($userId);
-
+        // sync facebook user
+        $userId = call_user_func(array($Model, 'syncFacebookUser'), $fbUser);
         if (!$userId) {
             return false;
         }
-        return $this->_findUser(array($Model->alias . '.' . $Model->primaryKey => $userId));
+
+        // @todo fix BaseAuthenticate::_findUser() to work with custom user model which use an custom alias
+        //$user = $this->_findUser(array($Model->alias . '.' . $Model->primaryKey => $userId));
+
+        $conditions = array($Model->alias . '.' . $Model->primaryKey => $userId);
+        if (!empty($this->settings['scope'])) {
+            $conditions = array_merge($conditions, $this->settings['scope']);
+        }
+        $result = $Model->find('first', array(
+            'conditions' => $conditions,
+            'recursive' => $this->settings['recursive'],
+            'contain' => $this->settings['contain'],
+        ));
+        if (empty($result) || empty($result[$Model->alias])) {
+            return false;
+        }
+        $user = $result[$Model->alias];
+        /*
+        if (
+            isset($conditions[$Model->alias . '.' . $fields['password']]) ||
+            isset($conditions[$fields['password']])
+        ) {
+            unset($user[$fields['password']]);
+        }
+        */
+        unset($result[$Model->alias]);
+        return array_merge($user, $result);
     }
 
 /**
@@ -108,7 +139,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @return void
  */
 	public function logout($user) {
-		FacebookConnect::getInstance()->disconnect(true);
+		FacebookConnect::getInstance()->disconnect(false);
 	}
 
 }

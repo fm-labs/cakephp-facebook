@@ -82,13 +82,15 @@ class FacebookController extends FacebookAppController {
 		if (!$this->Auth->user()) {
 			if ($this->Auth->login()) {
 				$this->Session->setFlash(__('Login successful'));
+                debug("Logged in!");
+                $this->redirect($this->Auth->redirectUrl());
 			} else {
 				$loginUrl = $this->Facebook->getLoginUrl();
-				$this->Facebook->flash('Login with facebook', $loginUrl);
+				//$this->Facebook->flash('Login with facebook', $loginUrl);
+                $this->set('loginUrl', $loginUrl);
 				return;
 			}
 		}
-		$this->redirect($this->Auth->redirectUrl());
 	}
 
 /**
