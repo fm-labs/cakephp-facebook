@@ -23,6 +23,11 @@ class FacebookApi {
     const API_VERSION_V1 = 1;
     const API_VERSION_V2 = 2;
 
+/**
+ * Facebook API version
+ *
+ * @var int
+ */
     public static $version = self::API_VERSION_V2;
 
 /**
