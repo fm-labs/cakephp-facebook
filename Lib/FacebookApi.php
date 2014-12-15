@@ -1,6 +1,11 @@
 <?php
 class FacebookApi {
 
+    const API_VERSION_V1 = 1;
+    const API_VERSION_V2 = 2;
+
+    public static $version = self::API_VERSION_V2;
+
 /**
  * @var array
  */
@@ -25,6 +30,7 @@ class FacebookApi {
 			throw new Exception('Facebook configuration not loaded');
 		}
 
+        // @todo implement other config params
 		$this->config = array(
 			//BaseFacebook params
 			'appId' => Configure::read('Facebook.appId'),
@@ -40,14 +46,16 @@ class FacebookApi {
 			//'log' => true,
 		);
 
-        Facebook::$DOMAIN_MAP = array(
-            'api'         => 'https://api.facebook.com/v2.0/',
-            'api_video'   => 'https://api-video.facebook.com/v2.0/',
-            'api_read'    => 'https://api-read.facebook.com/v2.0/',
-            'graph'       => 'https://graph.facebook.com/v2.0/',
-            'graph_video' => 'https://graph-video.facebook.com/v2.0/',
-            'www'         => 'https://www.facebook.com/v2.0/',
-        );
+        if (self::$version === self::API_VERSION_V2) {
+            Facebook::$DOMAIN_MAP = array(
+                'api'         => 'https://api.facebook.com/v2.0/',
+                'api_video'   => 'https://api-video.facebook.com/v2.0/',
+                'api_read'    => 'https://api-read.facebook.com/v2.0/',
+                'graph'       => 'https://graph.facebook.com/v2.0/',
+                'graph_video' => 'https://graph-video.facebook.com/v2.0/',
+                'www'         => 'https://www.facebook.com/v2.0/',
+            );
+        }
 
 		$this->FB = new Facebook($this->config);
 	}
@@ -90,6 +98,14 @@ class FacebookApi {
 		return call_user_func_array(array($_this->FB, $method), $params);
 	}
 
+    public static function getDomainUrl($domain, $url = '') {
+        $map = Facebook::$DOMAIN_MAP;
+        if (!isset($map[$domain])) {
+            return false;
+        }
+        return $map[$domain] . $url;
+    }
+
 /**
  * Get AppAccessToken
  *
@@ -99,7 +115,7 @@ class FacebookApi {
 		$appId = Configure::read('Facebook.appId');
 		$appSecret = Configure::read('Facebook.appSecret');
 
-		$appTokenUrl = "https://graph.facebook.com/oauth/access_token";
+		$appTokenUrl = self::getDomainUrl('graph', "oauth/access_token");
 		$appTokenUrl .= sprintf("?client_id=%s&client_secret=%s", $appId, $appSecret);
 		$appTokenUrl .= "&grant_type=client_credentials";
 
@@ -125,8 +141,8 @@ class FacebookApi {
 			$appAccessToken = self::getAppAccessToken();
 		}
 
-		$url = "https://graph.facebook.com/debug_token?";
-		$url .= "input_token=" . $inputToken;
+		$url = self::getDomainUrl('graph', "debug_token");
+		$url .= "?input_token=" . $inputToken;
 		$url .= "&access_token=" . $appAccessToken;
 
 		$response = file_get_contents($url);
