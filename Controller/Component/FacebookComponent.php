@@ -118,7 +118,7 @@ class FacebookComponent extends Component {
  * @param bool $destroyFacebookSession
  * @return void
  */
-	public function disconnect($destroyFacebookSession = true) {
+	public function disconnect($destroyFacebookSession = false) {
 		$this->FacebookConnect->disconnect($destroyFacebookSession);
 	}
 
@@ -139,6 +139,10 @@ class FacebookComponent extends Component {
 		$logoutUrl = $this->getLogoutUrl($redirectUrl);
 		$this->flash(__('Disconnecting from facebook'), $logoutUrl);
 	}
+
+    public function updateUserInfo() {
+        $this->FacebookConnect->updateUserInfo();
+    }
 
 /**
  * Return facebook user data

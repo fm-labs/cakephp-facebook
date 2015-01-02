@@ -82,9 +82,9 @@ class FacebookController extends FacebookAppController {
 		if (!$this->Auth->user()) {
 			if ($this->Auth->login()) {
 				$this->Session->setFlash(__('Login successful'));
-                debug("Logged in!");
                 $this->redirect($this->Auth->redirectUrl());
 			} else {
+                //$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
 				$loginUrl = $this->Facebook->getLoginUrl();
 				//$this->Facebook->flash('Login with facebook', $loginUrl);
                 $this->set('loginUrl', $loginUrl);
@@ -92,6 +92,13 @@ class FacebookController extends FacebookAppController {
 			}
 		}
 	}
+
+
+    /*
+    public function login_success() {
+        $redirectUrl = urldecode($this->request->query('redirect_url'));
+    }
+    */
 
 /**
  * Logout from facebook
@@ -129,10 +136,10 @@ class FacebookController extends FacebookAppController {
 			$this->Auth->logoutRedirect = $goto;
 			$redirectUrl = $this->Auth->logout();
 		} else {
-			$this->Facebook->disconnect(true);
 			$redirectUrl = ($goto) ? $goto : '/';
 		}
 
+        $this->Facebook->disconnect(true);
 		$this->Session->setFlash(__('Logged out'));
 		$this->redirect($redirectUrl);
 	}

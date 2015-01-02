@@ -26,7 +26,7 @@ App::uses('CakeSession', 'Model/Datasource');
  */
 class FacebookConnect {
 
-	static public $sessionKey = 'Facebook.User';
+	static public $sessionKey = 'Facebook';
 
 /**
  * Facebook api instance
@@ -53,6 +53,11 @@ class FacebookConnect {
  * @var string
  */
 	protected $_accessToken;
+
+/**
+ * @var string
+ */
+    protected $_userAccessToken;
 
 /**
  * Get singleton instance
@@ -91,6 +96,13 @@ class FacebookConnect {
         $this->restoreSession();
 	}
 
+    public function getAccessToken() {
+        if (!$this->_accessToken) {
+            $this->_accessToken = $this->FacebookApi->getAccessToken();
+        }
+        return $this->_accessToken;
+    }
+
 /**
  * Get facebook login url
  *
@@ -102,10 +114,11 @@ class FacebookConnect {
 	public function getLoginUrl($redirectUrl = null, $scope = array()) {
 		$params = array();
 
-        $scope = (array)Configure::read('Facebook.scope') + $scope;
-		if ($scope) {
-			$params['scope'] = (is_array($scope)) ? $scope : explode(',', trim($scope));
-		}
+        // scope
+        $scope = (is_array($scope)) ? $scope : explode(',', trim($scope));
+        $params['scope'] = array_unique(array_merge(Configure::read('Facebook.scope'), $scope));
+
+        // redirect url
 		if ($redirectUrl) {
 			$params['redirect_uri'] = Router::url($redirectUrl, true);
 		}
@@ -127,8 +140,29 @@ class FacebookConnect {
 			$params['next'] = Router::url($redirectUrl, true);
 		}
 
-		return $this->FacebookApi->getLogoutUrl($params);
+        return $this->FacebookApi->getLogoutUrl($params);
 	}
+
+    /**
+     * @param $name
+     * @param string $path
+     * @param array $params
+     * @return string
+     */
+    protected function getUrl($name, $path='', $params=array()) {
+        $url = Facebook::$DOMAIN_MAP[$name];
+        if ($path) {
+            if ($path[0] === '/') {
+                $path = substr($path, 1);
+            }
+            $url .= $path;
+        }
+        if ($params) {
+            $url .= '?' . http_build_query($params, null, '&');
+        }
+
+        return $url;
+    }
 
 /**
  * Connect facebook user
@@ -142,7 +176,7 @@ class FacebookConnect {
 		$accessToken = $this->FacebookApi->getAccessToken();
 
 		// check if accessToken has changed (e.g. after requesting/revoking permissions)
-		if (!$this->_accessToken !== $accessToken) {
+		if ($this->_accessToken !== $accessToken) {
 			// reset without destroying the facebook session
 			$this->disconnect(false);
 		}
@@ -153,8 +187,6 @@ class FacebookConnect {
 
 			// Check UserIds
 			if ($uid === $this->user['id']) {
-				//@todo validate accessToken.
-				//@todo proposal: store expiration date in session and check token periodically
 				return true;
 			}
 
@@ -204,6 +236,7 @@ class FacebookConnect {
 			$this->user('id'), $destroyFacebookSession), 'notice');
 
 		if ($destroyFacebookSession) {
+            debug("Destroying Session");
 			$this->FacebookApi->destroySession();
 		}
 
@@ -215,8 +248,6 @@ class FacebookConnect {
 
 /**
  * Refresh user info
- *
- * @todo Deprecate method. Use updateUserInfo() method instead
  */
 	public function refresh() {
 		$this->disconnect(false);
@@ -229,38 +260,36 @@ class FacebookConnect {
  * Fetch user info and permissions
  */
 	public function updateUserInfo() {
-		// user profile
-		$user = $this->FacebookApi->api('/me');
-
-		// user permissions
-		$perms = array();
-		$userPerms = $this->FacebookApi->api('/me/permissions');
-		if (isset($userPerms['data']) && $userPerms['data'][0]) {
-			$perms = $userPerms['data'][0];
-		} else {
-			$this->log(__d('facebook', 'Failed to parse permissions result'));
-		}
-
-		$this->setUser($user);
-		$this->setPermissions($perms);
+        $this->fetchUserInfo();
+        $this->fetchUserPermissions();
 		$this->updateSession();
-
-		//@todo dispatch event facebook.user
 	}
 
-/**
- * Restore user info from session
- *
- * @return void
- */
-	protected function restoreSession() {
-		if (CakeSession::check(self::$sessionKey)) {
-			$session = CakeSession::read(self::$sessionKey);
-			$this->setUser($session['User']);
-			$this->setPermissions($session['Permission']);
-			$this->_accessToken = $session['Auth']['access_token'];
-		}
-	}
+    protected function fetchUserInfo() {
+        $user = $this->FacebookApi->api('/me');
+        $this->setUser($user);
+    }
+
+    protected function fetchUserPermissions() {
+        $userPerms = $this->FacebookApi->api('/me/permissions');
+        $perms = array();
+
+        if (!isset($userPerms['data']) || !isset($userPerms['data'][0])) {
+            $this->log(__d('facebook', 'Failed to parse permissions result'));
+            return false;
+        }
+
+        if (FacebookApi::$version < FacebookApi::API_VERSION_V2) {
+            foreach ($userPerms['data'][0] as $perm) {
+                $perms[$perm] = true;
+            }
+        } else {
+            foreach ($userPerms['data'] as $userPerm) {
+                $perms[$userPerm['permission']] = ($userPerm['status'] === 'granted') ? true : false;
+            }
+        }
+        $this->setPermissions($perms);
+    }
 
 /**
  * Store user info in session
@@ -269,12 +298,13 @@ class FacebookConnect {
  */
 	protected function updateSession() {
 		if (!$this->user) {
-			return;
+			$this->deleteSession();
+            return;
 		}
 
 		CakeSession::write(self::$sessionKey, array(
             'Auth' => array(
-                'access_token' => $this->FacebookApi->getAccessToken(),
+                'access_token' => $this->getAccessToken(),
                 //'now' => time(),
                 //'expire_in' => time() + HOUR
             ),
@@ -282,6 +312,21 @@ class FacebookConnect {
 			'Permission' => $this->perms,
 		));
 	}
+
+    /**
+     * Restore user info from session
+     *
+     * @return void
+     */
+    protected function restoreSession() {
+        if (CakeSession::check(self::$sessionKey)) {
+            $session = CakeSession::read(self::$sessionKey);
+            $this->setUser($session['User']);
+            $this->setPermissions($session['Permission']);
+            $this->_accessToken = $session['Auth']['access_token'];
+        }
+    }
+
 
 /**
  * Delete user info from session
@@ -371,16 +416,18 @@ class FacebookConnect {
  */
 	public function deletePermission($perm) {
 		$result = $this->FacebookApi->api('/me/permissions/' . (string)$perm, 'DELETE');
-		if ($result != 'true') {
-			$this->log(
-				__d('facebook', "Failed to delete permission '%s'. Returned result: %s", $perm, $result));
+
+        if (FacebookApi::$version < FacebookApi::API_VERSION_V2_1) {
+            $result = ($result === 'true') ? true : false;
+        }
+
+		if (!$result) {
+			$this->log(__d('facebook', "Failed to delete permission '%s'.", $perm));
 			return false;
 		}
-
-		if (isset($this->perms[$perm])) {
-			unset($this->perms[$perm]);
-		}
 		$this->log(__d('facebook', "Deleted permission: %s", $perm), 'info');
+
+        $this->updateUserInfo();
 		return true;
 	}
 

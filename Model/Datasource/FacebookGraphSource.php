@@ -154,7 +154,7 @@ class FacebookGraphSource extends DataSource {
 		return null;
 	}
 
-	public function describe(Model $model) {
+	public function describe($model) {
 		//@todo Implement me
 		return null;
 	}

@@ -3,8 +3,8 @@ App::uses('FacebookAppModel', 'Facebook.Model');
 
 class FacebookGraph extends FacebookAppModel {
 
-	public function find($path, $params = array()) {
-		return $this->get($path, $params);
+	public function find($type = 'first', $query = array()) {
+		return $this->get($type, $query);
 	}
 
 	public function get($path, $params) {
@@ -15,7 +15,7 @@ class FacebookGraph extends FacebookAppModel {
 		return $this->getDataSource()->query($this, $path, 'POST', $params);
 	}
 
-	public function delete($path, $params = array()) {
+	public function remove($path, $params = array()) {
 		return $this->getDataSource()->query($this, $path, 'DELETE', $params);
 	}
 }

@@ -13,22 +13,24 @@
  * @method getApplicationAccessToken()
  * @method getLoginUrl()
  * @method getLoginStatusUrl()
- * @method getLogoutUrl()
  * @method getUser()
  * @method setAccessToken()
  * @method setExtendedAccessToken()
  */
-class FacebookApi {
+class FacebookApi extends Facebook {
 
-    const API_VERSION_V1 = 1;
-    const API_VERSION_V2 = 2;
+    const API_VERSION_UNVERSIONED = 0;
+    const API_VERSION_V1 = 1.0;
+    const API_VERSION_V2 = 2.0;
+    const API_VERSION_V2_1 = 2.1;
+    const API_VERSION_V2_2 = 2.2;
 
 /**
  * Facebook API version
  *
  * @var int
  */
-    public static $version = self::API_VERSION_V2;
+    public static $version = self::API_VERSION_V2_2;
 
 /**
  * @var array
@@ -46,9 +48,11 @@ class FacebookApi {
  * @throws Exception
  */
 	public function __construct() {
+        /*
 		if (!class_exists('Facebook')) {
 			throw new Exception('Facebook PHP SDK not found');
 		}
+        */
 
 		if (!Configure::read('Facebook')) {
 			throw new Exception('Facebook configuration not loaded');
@@ -70,18 +74,21 @@ class FacebookApi {
 			//'log' => true,
 		);
 
-        if (self::$version === self::API_VERSION_V2) {
-            Facebook::$DOMAIN_MAP = array(
-                'api'         => 'https://api.facebook.com/v2.0/',
-                'api_video'   => 'https://api-video.facebook.com/v2.0/',
-                'api_read'    => 'https://api-read.facebook.com/v2.0/',
-                'graph'       => 'https://graph.facebook.com/v2.0/',
-                'graph_video' => 'https://graph-video.facebook.com/v2.0/',
-                'www'         => 'https://www.facebook.com/v2.0/',
+        if (self::$version > self::API_VERSION_UNVERSIONED) {
+            $version = 'v' . self::$version;
+            self::$DOMAIN_MAP = array(
+                'api'         => 'https://api.facebook.com/' . $version . '/',
+                'api_video'   => 'https://api-video.facebook.com/' . $version . '/',
+                'api_read'    => 'https://api-read.facebook.com/' . $version . '/',
+                'graph'       => 'https://graph.facebook.com/' . $version . '/',
+                'graph_video' => 'https://graph-video.facebook.com/' . $version . '/',
+                'www'         => 'https://www.facebook.com/' . $version . '/',
+                'www-unversioned' => 'https://www.facebook.com/'
             );
         }
 
-		$this->FB = new Facebook($this->config);
+		//$this->FB = new Facebook($this->config);
+        parent::__construct($this->config);
 	}
 
 /**
@@ -91,9 +98,24 @@ class FacebookApi {
  * @param $params
  * @return mixed
  */
+/*
 	public function __call($method, $params) {
 		return call_user_func_array(array($this->FB, $method), $params);
 	}
+*/
+
+    public function getLogoutUrl($params=array()) {
+        $domain = (self::$version <= self::API_VERSION_V1) ? 'www' : 'www-unversioned';
+
+        return $this->getUrl(
+            $domain,
+            'logout.php',
+            array_merge(array(
+                'next' => $this->getCurrentUrl(),
+                'access_token' => $this->getUserAccessToken(),
+            ), $params)
+        );
+    }
 
 /**
  * Get singleton instance
@@ -117,10 +139,12 @@ class FacebookApi {
  * @param $params
  * @return mixed
  */
+ /*
 	public static function __callStatic($method, $params) {
 		$_this = FacebookApi::getInstance();
 		return call_user_func_array(array($_this->FB, $method), $params);
 	}
+*/
 
     public static function getDomainUrl($domain, $url = '') {
         $map = Facebook::$DOMAIN_MAP;
