@@ -1,10 +1,9 @@
 <?php
-App::uses('AppModel','Model');
- 
+App::uses('AppModel', 'Model');
+
 class FacebookAppModel extends AppModel {
-	
+
 	public $useDbConfig = 'facebook';
 
-    public $useTable = false;
+	public $useTable = false;
 }
-?>

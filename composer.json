@@ -1,6 +1,7 @@
 {
     "name": "fm-labs/cakephp-facebook",
     "description": "CakePHP Facebook Plugin",
+    "type": "cakephp-plugin",
     "minimum-stability": "stable",
     "authors": [
         {
@@ -11,9 +12,6 @@
     "require": {
         "composer/installers": "~1.0",
         "facebook/php-sdk": "@stable"
-    },
-    "config": {
-        "vendor-dir": "Vendor"
     },
     "extra": {
         "installer-name": "Facebook"
