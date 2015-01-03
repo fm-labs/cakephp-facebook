@@ -1,11 +1,9 @@
 <?php
-Configure::load('facebook');
-
 App::uses('AppHelper', 'View/Helper');
-App::uses('FacebookConnect', 'Facebook.Lib');
 
 /**
  * @property HtmlHelper $Html
+ * @property SessionHelper $Session
  */
 class FacebookHelper extends AppHelper {
 
@@ -76,7 +74,19 @@ class FacebookHelper extends AppHelper {
  * @return mixed
  */
 	public function user($key = null) {
-		return FacebookConnect::user($key);
+		if (!$this->Session->check('Facebook.User')) {
+            return null;
+        }
+
+        if ($key === null) {
+            return $this->Session->read('Facebook.User');
+        }
+
+        if ($this->Session->check('Facebook.User.' . (string) $key)) {
+            return $this->Session->read('Facebook.User.' . (string) $key);
+        }
+
+        return null;
 	}
 
 /**
@@ -414,7 +424,9 @@ SDK;
 
 			case self::RENDER_TYPE_IFRAME:
 			default:
-				return "FacebookHelper: Render type " . $this->_renderType . " not implemented yet";
+                if (Configure::read('debug') > 0) {
+                    throw new Exception(sprintf("FacebookHelper: Unsupported widget render type '%s'", $this->_renderType));
+                }
 		}
 
 		return false;
