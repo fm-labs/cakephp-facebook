@@ -70,10 +70,10 @@ class AuthController extends FacebookAppController {
 			throw new NotFoundException();
 		}
 
-		if (!$this->Auth->user()) {
+		//if (!$this->Auth->user()) {
 			if ($this->Auth->login()) {
 				$this->Session->setFlash(__('Login successful'));
-                $this->redirect($this->Auth->redirectUrl());
+                //$this->redirect($this->Auth->redirectUrl());
 			} else {
                 //$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
 				$loginUrl = $this->Facebook->getLoginUrl();
@@ -81,7 +81,7 @@ class AuthController extends FacebookAppController {
                 $this->set('loginUrl', $loginUrl);
 				return;
 			}
-		}
+		//}
 	}
 
 

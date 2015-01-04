@@ -32,9 +32,14 @@ class FacebookApi {
  * @var array
  */
 	public $config = array(
+        // Facebook App ID
         'appId' => null,
+        // Facebook App Secret
         'appSecret' => null,
+        // Internal connect URL
         'connectUrl' => '/facebook/auth/connect/',
+        // Default Login permissions
+        'permissions' => array('email')
     );
 
 /**
@@ -67,7 +72,7 @@ class FacebookApi {
 		$this->config = array_merge($this->config, Configure::read('Facebook'));
 
         if (!$this->config['appId'] || !$this->config['appSecret']) {
-            throw new InvalidArgumentException('Facebook AppID or AppSecret not set');
+            throw new InvalidArgumentException('Facebook AppID or AppSecret missing');
         }
 
         FacebookSession::setDefaultApplication(
@@ -266,6 +271,9 @@ class FacebookApi {
         if (is_string($scope)) {
             $scope = explode(',', $scope);
         }
+
+        // add default permissions
+        $scope += $this->config['permissions'];
 
         return $this->getRedirectLoginHelper($next)
             ->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);

@@ -10,6 +10,8 @@
         <p><?php echo h($this->get('loginUrl')); ?></p>
 
     <?php endif; ?>
+
+    <?php debug($_SESSION); ?>
 </div>
 
 
