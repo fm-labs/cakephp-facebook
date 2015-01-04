@@ -67,6 +67,22 @@ class FacebookHelper extends AppHelper {
 		return $this;
 	}
 
+    public function connectUrl() {
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'connect');
+    }
+
+    public function disconnectUrl() {
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'disconnect');
+    }
+
+    public function loginUrl() {
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'login');
+    }
+
+    public function logoutUrl() {
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'logout');
+    }
+
 /**
  * Returns facebook user data
  *
@@ -131,11 +147,27 @@ class FacebookHelper extends AppHelper {
         return FacebookApi::validateUserPermission($grantedPerms, $perm);
     }
 
+    public function permissionRequestUrl($perm) {
+        if (is_array($perm)) {
+            $perm = implode(',', $perm);
+        }
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'permission_request', (string) $perm);
+    }
+
+    public function permissionRevokeUrl($perm) {
+        if (is_array($perm)) {
+            $perm = implode(',', $perm);
+        }
+        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'permission_revoke', (string) $perm);
+    }
+
+
 /**
  * Returns the Facebook JavaScript SDK which should be included
  * right after the opening <body> tag in the layout
  *
  * @return string
+ * @TODO Channel URL
  */
 	public function sdk() {
 		$html = <<<SDK

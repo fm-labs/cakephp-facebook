@@ -87,6 +87,13 @@ class FacebookComponent extends Component {
     }
 
 /**
+ * @see FacebookApi::reloadUser()
+ */
+    public function reloadUser() {
+        $this->FacebookApi->reloadUser();
+    }
+
+/**
  * Convenience wrapper for getUser()
  */
     public function user($key = null) {
@@ -108,8 +115,8 @@ class FacebookComponent extends Component {
 /**
  * @see FacebookApi::checkUserPermission()
  */
-	public function checkUserPermission($perms) {
-		return $this->FacebookApi->checkUserPermission($perms);
+	public function checkUserPermission($perm) {
+		return $this->FacebookApi->checkUserPermission($perm);
 	}
 
 /**
@@ -119,8 +126,9 @@ class FacebookComponent extends Component {
  * @param string|array $perms Comma-separated string or array list of permissions
  * @param null|string $next
  */
-	public function requestUserPermission($perms, $next = null) {
-		$loginUrl = $this->getLoginUrl($next, $perms);
+	public function requestUserPermission($perm, $next = null) {
+		$loginUrl = $this->FacebookApi->getUserPermissionRequestUrl($perm);
+        debug($this->settings);
 		$this->flash('Requesting Facebook permission', $loginUrl);
 	}
 
@@ -132,7 +140,7 @@ class FacebookComponent extends Component {
  * @return bool
  */
 	public function revokeUserPermission($perm) {
-		return $this->FacebookApi->deleteUserPermission($perm);
+		return $this->FacebookApi->revokeUserPermission($perm);
 	}
 
 /**

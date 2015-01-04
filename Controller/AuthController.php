@@ -36,6 +36,7 @@ class AuthController extends FacebookAppController {
 
         if ($this->Facebook->getSession()) {
             $this->Session->setFlash("You are already connected with Facebook");
+            $this->Facebook->reloadUser();
         } elseif ($this->Facebook->connect()) {
             $this->Session->setFlash("Connected with Facebook");
         } else {
@@ -95,12 +96,13 @@ class AuthController extends FacebookAppController {
  * Redirects to facebook logout page
  *
  * @return void
+ * @TODO Refactor with configurable redirect URL
  */
 	public function logout() {
-		$referer = $this->referer();
+		$next = $this->referer();
 		$redirectUrl = Router::url(array(
 			'action' => 'logout_success',
-			'?' => array('goto' => $referer)
+			'?' => array('next' => $next)
 		), true);
 		$logoutUrl = $this->Facebook->getLogoutUrl($redirectUrl);
 		$this->redirect($logoutUrl);
@@ -116,22 +118,19 @@ class AuthController extends FacebookAppController {
  * 'goto' query param
  *
  * @return void
+ * @TODO Refactor
  */
 	public function logout_success() {
-		$goto = ($this->request->query('goto'))
-			? $this->request->query('goto')
-			: null;
+		$next = ($this->request->query('next')) ?: '/';
 
 		if ($this->Components->enabled('Auth')) {
-			$this->Auth->logoutRedirect = $goto;
-			$redirectUrl = $this->Auth->logout();
-		} else {
-			$redirectUrl = ($goto) ? $goto : '/';
+			$this->Auth->logoutRedirect = $next;
+            $next = $this->Auth->logout();
 		}
 
-        $this->Facebook->disconnect(true);
+        $this->Facebook->disconnect();
 		$this->Session->setFlash(__('Logged out'));
-		$this->redirect($redirectUrl);
+		$this->redirect($next);
 	}
 
 /**

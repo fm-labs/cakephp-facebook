@@ -74,6 +74,8 @@ class FacebookApi {
             $this->config['appId'],
             $this->config['appSecret']
         );
+
+        CakeSession::start();
 	}
 
 /**
@@ -87,13 +89,12 @@ class FacebookApi {
  * @TODO (Auto-)Exchange short-lived token for an extended token
  */
     public function connect() {
-
         try {
             if ($this->loadSessionFromRedirect()) {
 
                 $this->updateAccessToken();
-                $this->loadUser();
-                $this->loadUserPermissions();
+                $this->loadUser(true);
+                $this->loadUserPermissions(true);
 
                 return true;
             }
@@ -331,6 +332,30 @@ class FacebookApi {
         return $this->userPermissions;
     }
 
+    public function getUserPermissionRequestUrl($requestedPerms) {
+        $grantedPerms = $this->getUserPermissions();
+        $requestedPerms = (array) $requestedPerms;
+        $declinedPerms = array();
+
+        // check if any of the requested perms have been revoked previously
+        foreach ($requestedPerms as $perm) {
+            if (isset($grantedPerms[$perm]) && $grantedPerms[$perm] === false) {
+                $declinedPerms[] = $perm;
+            }
+        }
+
+        // if one of the requested params has been revoked, perform a re-request
+        if (!empty($declinedPerms)) {
+            return $this->getUserPermissionReRequestUrl($requestedPerms);
+        }
+
+        return $this->getLoginUrl(null, $requestedPerms);
+    }
+
+    public function getUserPermissionReRequestUrl($requestedPerms = array()) {
+        return $this->getRedirectLoginHelper()->getReRequestUrl($requestedPerms);
+    }
+
 /**
  * @see FacebookApi::validateUserPermission()
  */
@@ -347,7 +372,7 @@ class FacebookApi {
  * @param string $perm Permission name
  * @return bool
  */
-    public function deleteUserPermission($perm) {
+    public function revokeUserPermission($perm) {
         $result = $this->graphDelete('/me/permissions/' . (string)$perm);
 
         if (!$result) {
@@ -368,7 +393,7 @@ class FacebookApi {
  * @return FacebookRequest
  */
     protected function buildGraphRequest($method, $path, $params = array()) {
-        return new FacebookRequest($this->FacebookSession, $method, $path, $params);
+        return new FacebookRequest($this->getSession(), $method, $path, $params);
     }
 
 /**
@@ -487,6 +512,9 @@ class FacebookApi {
  * @return bool
  */
     public static function log($msg, $type = LOG_DEBUG) {
+        if (Configure::write('debug') > 0) {
+            debug($msg);
+        }
         return CakeLog::write($type, $msg, static::$logScopes);
     }
 
