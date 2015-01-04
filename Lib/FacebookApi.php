@@ -77,10 +77,14 @@ class FacebookApi {
 	}
 
 /**
- * Connect Facebook user with app
+ * Connect Facebook user
  *
- * Try to load session from client redirect.
+ * Attempts to load session from client redirect.
+ * This method should be called when the Facebook OAuth Client Login Flow
+ * redirects back to app. On success, the access token will be persisted for
+ * consecutive calls.
  *
+ * @TODO (Auto-)Exchange short-lived token for an extended token
  */
     public function connect() {
 
@@ -102,7 +106,6 @@ class FacebookApi {
  * Disconnect Facebook user from app and cleanup persistent data
  */
     public function disconnect() {
-        debug(__FUNCTION__);
         $this->user = null;
         $this->userPermissions = null;
         $this->FacebookSession = null;
