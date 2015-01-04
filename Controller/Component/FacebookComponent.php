@@ -92,14 +92,14 @@ class FacebookComponent extends Component {
  *****************************************/
 
 /**
- * @see FacebookApi::getPermissions()
+ * @see FacebookApi::getUserPermissions()
  */
 	public function getPermissions() {
 		return $this->FacebookApi->getUserPermissions();
 	}
 
 /**
- * @see FacebookApi::checkPermission()
+ * @see FacebookApi::checkUserPermission()
  */
 	public function checkPermission($perms) {
 		return $this->FacebookApi->checkUserPermission($perms);

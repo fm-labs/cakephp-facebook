@@ -24,22 +24,6 @@ class AuthController extends FacebookAppController {
 		}
 	}
 
-    public function index() {
-        $user = $this->Facebook->user();
-        debug($user);
-    }
-
-    public function token() {
-
-        if ($this->request->is('post')) {
-            $this->Session->write('Facebook.authToken', $this->request->data['authToken']);
-            $this->Session->setFlash('Updated Facebook Auth Token to: ' . $this->request->data['authToken']);
-            $this->redirect(array('action' => 'token'));
-        } else {
-            $this->request->data = $this->Session->read('Facebook');
-        }
-    }
-
 /**
  * Connect with facebook
  *
@@ -172,4 +156,19 @@ class AuthController extends FacebookAppController {
 		}
 		$this->redirect($this->referer());
 	}
+
+
+/**
+ * Debug access token
+ */
+    public function token() {
+
+        if ($this->request->is('post') && isset($this->request->data['accessToken'])) {
+            $this->Session->write('Facebook.Auth.accessToken', $this->request->data['accessToken']);
+            $this->Session->setFlash('Updated Facebook Auth Token to: ' . $this->request->data['accessToken']);
+            $this->redirect(array('action' => 'token'));
+        } else {
+            $this->request->data = $this->Session->read('Facebook.Auth');
+        }
+    }
 }

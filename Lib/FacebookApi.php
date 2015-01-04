@@ -184,7 +184,8 @@ class FacebookApi {
         if ($force === true || !CakeSession::check('Facebook.UserPermissions')) {
             if ($this->FacebookSession) {
                 // For legacy apps the default permission 'installed' will be set to 'true'
-                $permissions = array('installed' => true);
+                //$permissions = array('installed' => true);
+                $permissions = array();
 
                 $data = $this->graphGet('/me/permissions')->getResponse()->data;
                 array_walk($data, function ($val) use (&$permissions) {
