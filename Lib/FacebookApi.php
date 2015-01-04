@@ -94,7 +94,7 @@ class FacebookApi {
                 return true;
             }
         } catch (Exception $ex) {
-            debug("CONNECT ERROR: " . $ex->getMessage());
+            $this->log("CONNECT ERROR: " . $ex->getMessage());
         }
     }
 
@@ -328,27 +328,8 @@ class FacebookApi {
         return $this->userPermissions;
     }
 
-/**
- * Check permission(s)
- *
- * @param string|array $permissions Comma-separated string or array of permissions to check
- * @return bool|array TRUE if all permissions are granted,
- *                    otherwise array of missing permissions
- */
     public function checkUserPermission($permissions) {
-        if (is_string($permissions)) {
-            $permissions = explode(',', $permissions);
-        }
-
-        $grantedPerms = $this->getUserPermissions();
-        $missing = array();
-        foreach ($permissions as $perm) {
-            if (!array_key_exists($perm, $grantedPerms) || $grantedPerms[$perm] !== true) {
-                $missing[] = $perm;
-            }
-        }
-
-        return (!empty($missing)) ? $missing : true;
+        return self::validateUserPermission($this->getUserPermissions(), $permissions);
     }
 
 /**
@@ -374,16 +355,24 @@ class FacebookApi {
         return true;
     }
 
-    /**
-     * @param $method
-     * @param $path
-     * @param array $params
-     * @return FacebookRequest
-     */
+/**
+ * @param $method
+ * @param $path
+ * @param array $params
+ * @return FacebookRequest
+ */
     protected function buildGraphRequest($method, $path, $params = array()) {
         return new FacebookRequest($this->FacebookSession, $method, $path, $params);
     }
 
+/**
+ * Execute a Graph Api request
+ *
+ * @param FacebookRequest $req
+ * @return \Facebook\FacebookResponse
+ * @throws Facebook\FacebookRequestException
+ * @throws Exception
+ */
     protected function executeGraphRequest(FacebookRequest $req) {
         try {
             return $req->execute();
@@ -399,49 +388,49 @@ class FacebookApi {
         }
     }
 
-    /**
-     * Submit a Graph Api GET Request
-     *
-     * @param $method
-     * @param $path
-     * @param $params
-     * @return \Facebook\FacebookResponse
-     */
+/**
+ * Submit a Graph Api Request
+ *
+ * @param $method
+ * @param $path
+ * @param $params
+ * @return \Facebook\FacebookResponse
+ */
     public function graph($method, $path, $params) {
         $req = $this->buildGraphRequest($method, $path, $params);
         return $this->executeGraphRequest($req);
     }
 
-    /**
-     * Submit a Graph Api GET Request
-     *
-     * @param $path
-     * @param array $params
-     * @return \Facebook\FacebookResponse
-     */
+/**
+ * Submit a Graph Api GET Request
+ *
+ * @param $path
+ * @param array $params
+ * @return \Facebook\FacebookResponse
+ */
     public function graphGet($path, $params = array()) {
         $req = $this->buildGraphRequest('GET', $path, $params);
         return $this->executeGraphRequest($req);
     }
 
-    /**
-     * Submit a Graph Api POST Request
-     *
-     * @param $path
-     * @param array $data
-     * @return \Facebook\FacebookResponse
-     */
+/**
+ * Submit a Graph Api POST Request
+ *
+ * @param $path
+ * @param array $data
+ * @return \Facebook\FacebookResponse
+ */
     public function graphPost($path, $data = array()) {
         $req = $this->buildGraphRequest('POST', $path, $data);
         return $this->executeGraphRequest($req);
     }
 
-    /**
-     * Submit a Graph Api DELETE Request
-     *
-     * @param $path
-     * @return \Facebook\FacebookResponse
-     */
+/**
+ * Submit a Graph Api DELETE Request
+ *
+ * @param $path
+ * @return \Facebook\FacebookResponse
+ */
     public function graphDelete($path) {
         $req = $this->buildGraphRequest('DELETE', $path);
         return $this->executeGraphRequest($req);
@@ -460,6 +449,29 @@ class FacebookApi {
 		}
 		return $instance[0];
 	}
+
+/**
+ * Validate permissions
+ *
+ * @param array $grantedPerms List of granted permissions
+ * @param string|array $checkPerms Comma-separated string or array of permissions to check
+ * @return bool|array TRUE if all permissions are granted,
+ *                    otherwise array of missing permissions
+ */
+    public static function validateUserPermission($grantedPerms, $checkPerms) {
+        if (is_string($checkPerms)) {
+            $checkPerms = explode(',', $checkPerms);
+        }
+
+        $missing = array();
+        foreach ($checkPerms as $perm) {
+            if (!array_key_exists($perm, $grantedPerms) || $grantedPerms[$perm] !== true) {
+                $missing[] = $perm;
+            }
+        }
+
+        return (!empty($missing)) ? $missing : true;
+    }
 
 /**
  * Log wrapper

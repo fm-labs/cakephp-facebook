@@ -1,5 +1,6 @@
 <?php
 App::uses('AppHelper', 'View/Helper');
+App::uses('FacebookApi', 'Facebook.Lib');
 
 /**
  * @property HtmlHelper $Html
@@ -117,6 +118,18 @@ class FacebookHelper extends AppHelper {
 		}
 		return $this->Html->image($this->userImageUrl($userId), $options);
 	}
+
+/**
+ * Check user permission(s)
+ *
+ * @see FacebookApi::validateUserPermission
+ * @param string|array $perm
+ * @return array|bool
+ */
+    public function hasPermission($perm) {
+        $grantedPerms = (array) $this->Session->read('Facebook.UserPermissions');
+        return FacebookApi::validateUserPermission($grantedPerms, $perm);
+    }
 
 /**
  * Returns the Facebook JavaScript SDK which should be included

@@ -140,7 +140,7 @@ class AuthController extends FacebookAppController {
  * @param string $perms Permission name. Comma-separated list for multiple permissions.
  */
 	public function permission_request($perms = null) {
-		$this->Facebook->requestPermission($perms, $this->referer());
+		$this->Facebook->requestUserPermission($perms, $this->referer());
 	}
 
 /**
@@ -149,7 +149,7 @@ class AuthController extends FacebookAppController {
  * @param string $perm
  */
 	public function permission_revoke($perm = null) {
-		if ($this->Facebook->revokePermission($perm)) {
+		if ($this->Facebook->revokeUserPermission($perm)) {
 			$this->Session->setFlash(__('Permission %s has been revoked', $perm));
 		} else {
 			$this->Session->setFlash(__('Permission %s could not be revoked. Please try again.', $perm));

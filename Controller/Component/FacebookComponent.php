@@ -66,13 +66,6 @@ class FacebookComponent extends Component {
     }
 
 /**
- * @see FacebookApi::getUser()
- */
-	public function user($key = null) {
-		return $this->FacebookApi->getUser($key);
-	}
-
-/**
  * @see FacebookApi::getLoginUrl()
  */
 	public function getLoginUrl($next = null, $scope = array()) {
@@ -86,22 +79,36 @@ class FacebookComponent extends Component {
 		return $this->FacebookApi->getLogoutUrl($redirectUrl);
 	}
 
+/**
+ * @see FacebookApi::getUser()
+ */
+    public function getUser($key = null) {
+        return $this->FacebookApi->getUser($key);
+    }
 
-/*****************************************
+/**
+ * Convenience wrapper for getUser()
+ */
+    public function user($key = null) {
+        return $this->getUser($key);
+    }
+
+
+    /*****************************************
  *** PERMISSIONS
  *****************************************/
 
 /**
  * @see FacebookApi::getUserPermissions()
  */
-	public function getPermissions() {
+	public function getUserPermissions() {
 		return $this->FacebookApi->getUserPermissions();
 	}
 
 /**
  * @see FacebookApi::checkUserPermission()
  */
-	public function checkPermission($perms) {
+	public function checkUserPermission($perms) {
 		return $this->FacebookApi->checkUserPermission($perms);
 	}
 
@@ -112,7 +119,7 @@ class FacebookComponent extends Component {
  * @param string|array $perms Comma-separated string or array list of permissions
  * @param null|string $next
  */
-	public function requestPermission($perms, $next = null) {
+	public function requestUserPermission($perms, $next = null) {
 		$loginUrl = $this->getLoginUrl($next, $perms);
 		$this->flash('Requesting Facebook permission', $loginUrl);
 	}
@@ -124,7 +131,7 @@ class FacebookComponent extends Component {
  * @param string $perm Permission name
  * @return bool
  */
-	public function revokePermission($perm) {
+	public function revokeUserPermission($perm) {
 		return $this->FacebookApi->deleteUserPermission($perm);
 	}
 
@@ -132,7 +139,7 @@ class FacebookComponent extends Component {
  * @see Controller::flash()
  */
     public function flash($msg, $url, $pause = 2, $layout = 'Facebook.flash') {
-        if (!$this->useFlash) {
+        if (!$this->settings['useFlash']) {
             $this->redirect($url);
             return;
         }
