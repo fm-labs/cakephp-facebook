@@ -15,9 +15,6 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * - `recursive` The value of the recursive key passed to find(). Defaults to 0.
  * - `contain` Extra models to contain and store in session.
  *
- * Facebook specific settings:
- * - `defaultPermissions` The default facebook login scopes
- *
  * @var array
  */
 	public $settings = array(
@@ -28,7 +25,6 @@ class FacebookAuthenticate extends BaseAuthenticate {
 		'scope' => array(),
 		'recursive' => 0,
 		'contain' => null,
-		'defaultPermissions' => array(),
 	);
 
 /**
@@ -57,7 +53,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
 	public function getUser(CakeRequest $request) {
         debug("FacebookAuthenticate::getUser()");
 
-        if (!$this->FacebookApi->getSession()) {
+        if (!$this->FacebookApi->getSession() && !$this->FacebookApi->connect()) {
             debug("FacebookAuthenticate::getUser() No active session");
             return false;
         }
@@ -135,7 +131,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @return void
  */
 	public function logout($user) {
-		//$this->FacebookApi->disconnect();
+		$this->FacebookApi->disconnect();
 	}
 
 }

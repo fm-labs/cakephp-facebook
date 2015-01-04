@@ -24,31 +24,98 @@ class AuthController extends FacebookAppController {
 		}
 	}
 
+    protected function getRedirectUrl() {
+        /*
+        if ($this->Components->enabled('Auth')) {
+            return $this->Auth->redirectUrl($this->Session->read('Facebook.redirect_url'));
+        }
+        return ($this->Session->read('Facebook.redirect_url')) ?: '/';
+        */
+        return $this->Auth->redirectUrl();
+    }
+
+    protected function setRedirectUrl() {
+
+    }
+
 /**
  * Connect with facebook
  *
  * 1. Redirect the user to the facebook login dialog.
  * 2. Facebook redirects the user back here.
  * 3. Redirect user to the initial referer url (if available)
+ *
+ * @TODO Move to FacebookComponent
  */
 	public function connect() {
-		//$referrer = Router::url($this->referer('/', true), true);
 
+        // Resume active session
         if ($this->Facebook->getSession()) {
-            $this->Session->setFlash("You are already connected with Facebook");
             $this->Facebook->reloadUser();
+            $this->Facebook->flash("You are already connected with Facebook", $this->getRedirectUrl());
+
+        // Load session from redirect
         } elseif ($this->Facebook->connect()) {
-            $this->Session->setFlash("Connected with Facebook");
+            //@TODO
+            if ($this->Components->enabled('Auth')) {
+                $this->login();
+                return;
+            }
+            $this->Facebook->flash("Connected with Facebook", $this->getRedirectUrl());
+
+        // No session
         } else {
-            $loginUrl = $this->Facebook->getLoginUrl(null, array('email'));
-            //$this->Facebook->flash('Connect with facebook', $loginUrl);
-            $this->set('loginUrl', $loginUrl);
+            //$referrer = $this->referer();
+            //$this->Session->write('Facebook.redirect_url', $referrer);
+
+            $loginUrl = $this->Facebook->getLoginUrl();
+            $this->Facebook->flash('Connect with facebook', $loginUrl);
         }
 	}
+
+
+/**
+ * Login with Facebook
+ * Requires AuthComponent with 'authenticate' set to 'Facebook.Facebook'
+ *
+ * @TODO Move to FacebookComponent
+ */
+    public function login() {
+        /*
+        if (!$this->Components->enabled('Auth')) {
+            if (Configure::read('debug') > 0) {
+                throw new CakeException(__('Authentication is not enabled'));
+            }
+            throw new NotFoundException();
+        }
+        */
+
+        if ($this->Auth->user()) {
+            debug('Redirect Url: ' . $this->Auth->redirectUrl());
+            debug('Redirect Url 2: ' . $this->Session->read('Facebook.redirect_url'));
+            $this->Facebook->flash('Already logged in', $this->getRedirectUrl());
+
+        } elseif ($this->Auth->login()) {
+            debug('Redirect Url: ' . $this->Auth->redirectUrl());
+            debug('Redirect Url 2: ' . $this->Session->read('Facebook.redirect_url'));
+            $this->Facebook->flash('Login successful', $this->Auth->redirectUrl());
+        } else {
+            $referrer = $this->referer();
+            $this->Session->write('Facebook.redirect_url', $referrer);
+
+            debug("Referrer: " . $referrer);
+
+            //$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
+            $loginUrl = $this->Facebook->getLoginUrl();
+            $this->Facebook->flash('Login with facebook', $loginUrl);
+        }
+    }
 
 /**
  * Disconnect user from application
  * without logging the user out of facebook itself
+ *
+ * @TODO Move to FacebookComponent
  */
 	public function disconnect() {
 		$this->Facebook->disconnect();
@@ -57,80 +124,22 @@ class AuthController extends FacebookAppController {
 	}
 
 /**
- * Login with Facebook
- * Requires AuthComponent with 'authenticate' set to 'Facebook.Facebook'
- *
- * @todo proper exception handling
- */
-	public function login() {
-		if (!$this->Components->enabled('Auth')) {
-			if (Configure::read('debug') > 1) {
-				throw new CakeException(__('AuthComponent is not enabled in your AppController'));
-			}
-			throw new NotFoundException();
-		}
-
-		//if (!$this->Auth->user()) {
-			if ($this->Auth->login()) {
-				$this->Session->setFlash(__('Login successful'));
-                //$this->redirect($this->Auth->redirectUrl());
-			} else {
-                //$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
-				$loginUrl = $this->Facebook->getLoginUrl();
-				//$this->Facebook->flash('Login with facebook', $loginUrl);
-                $this->set('loginUrl', $loginUrl);
-				return;
-			}
-		//}
-	}
-
-
-    /*
-    public function login_success() {
-        $redirectUrl = urldecode($this->request->query('redirect_url'));
-    }
-    */
-
-/**
  * Logout from facebook
- * Redirects to facebook logout page
+ *
+ * Disconnect
+ * Redirect client to facebook logout page
+ * Facebook redirects back to the initial referrer
  *
  * @return void
- * @TODO Refactor with configurable redirect URL
+ * @TODO Custom redirect URL
+ * @TODO Move to FacebookComponent
  */
 	public function logout() {
 		$next = $this->referer();
-		$redirectUrl = Router::url(array(
-			'action' => 'logout_success',
-			'?' => array('next' => $next)
-		), true);
-		$logoutUrl = $this->Facebook->getLogoutUrl($redirectUrl);
-		$this->redirect($logoutUrl);
-	}
-
-/**
- * Logout from facebook was successful
- *
- * The user has successfully logged out of facebook,
- * now logout of application and destroy the facebook session.
- * Redirects to AuthComponent::logoutRedirect.
- * Redirect url can be overridden by using the
- * 'goto' query param
- *
- * @return void
- * @TODO Refactor
- */
-	public function logout_success() {
-		$next = ($this->request->query('next')) ?: '/';
-
-		if ($this->Components->enabled('Auth')) {
-			$this->Auth->logoutRedirect = $next;
-            $next = $this->Auth->logout();
-		}
 
         $this->Facebook->disconnect();
-		$this->Session->setFlash(__('Logged out'));
-		$this->redirect($next);
+		$logoutUrl = $this->Facebook->getLogoutUrl($next);
+		$this->redirect($logoutUrl);
 	}
 
 /**

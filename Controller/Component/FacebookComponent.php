@@ -22,13 +22,14 @@ class FacebookComponent extends Component {
 	public $FacebookApi;
 
 /**
- * Component settings
- *
- * @var array
+ * @var bool
  */
-    public $settings = array(
-        'useFlash' => true
-    );
+    public $useAuth = false;
+
+/**
+ * @var bool
+ */
+    public $useFlash = true;
 
 /**
  * @see Component::initialize()
@@ -68,8 +69,8 @@ class FacebookComponent extends Component {
 /**
  * @see FacebookApi::getLoginUrl()
  */
-	public function getLoginUrl($next = null, $scope = array()) {
-		return $this->FacebookApi->getLoginUrl($next, $scope);
+	public function getLoginUrl($scope = array()) {
+		return $this->FacebookApi->getLoginUrl(null, $scope);
 	}
 
 /**
@@ -128,7 +129,6 @@ class FacebookComponent extends Component {
  */
 	public function requestUserPermission($perm, $next = null) {
 		$loginUrl = $this->FacebookApi->getUserPermissionRequestUrl($perm);
-        debug($this->settings);
 		$this->flash('Requesting Facebook permission', $loginUrl);
 	}
 
@@ -147,7 +147,7 @@ class FacebookComponent extends Component {
  * @see Controller::flash()
  */
     public function flash($msg, $url, $pause = 2, $layout = 'Facebook.flash') {
-        if (!$this->settings['useFlash']) {
+        if (!$this->useFlash) {
             $this->redirect($url);
             return;
         }

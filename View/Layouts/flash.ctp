@@ -37,6 +37,8 @@ A:HOVER { text-decoration: underline; color:#44E }
 
 <?php if (Configure::read('debug') > 0): ?>
 <p><a href="<?php echo $url; ?>"><?php echo $url; ?></a></p>
+
+<?php debug($_SESSION); ?>
 <?php endif; ?>
 </body>
 </html>

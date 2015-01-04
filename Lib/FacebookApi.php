@@ -248,26 +248,26 @@ class FacebookApi {
 /**
  * Get instance of FacebookRedirectLoginHelper
  * 
- * @param null $next
  * @return FacebookRedirectLoginHelper
- * @TODO Implement support for 'next' param
  */
-    public function getRedirectLoginHelper($next = null) {
-        if ($this->FacebookRedirectLoginHelper === null) {
+    public function getRedirectLoginHelper($redirectUrl = null) {
+        $redirectUrl = ($redirectUrl) ?: $this->config['connectUrl'];
+
+        //if ($this->FacebookRedirectLoginHelper === null) {
             $this->FacebookRedirectLoginHelper = new FacebookRedirectLoginHelper(
-                Router::url($this->config['connectUrl'], true)
+                Router::url($redirectUrl, true)
             );
-        }
+        //}
         return $this->FacebookRedirectLoginHelper;
     }
 
 /**
- * @param null|string $next
+ * @param null|string $redirectUrl
  * @param array|string $scope
  * @param bool $displayAsPopup
  * @return string
  */
-    public function getLoginUrl($next = null, $scope = array(), $displayAsPopup = false) {
+    public function getLoginUrl($redirectUrl = null, $scope = array(), $displayAsPopup = false) {
         if (is_string($scope)) {
             $scope = explode(',', $scope);
         }
@@ -275,7 +275,7 @@ class FacebookApi {
         // add default permissions
         $scope += $this->config['permissions'];
 
-        return $this->getRedirectLoginHelper($next)
+        return $this->getRedirectLoginHelper($redirectUrl)
             ->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
     }
 
@@ -284,13 +284,13 @@ class FacebookApi {
  * @return string
  */
     public function getLogoutUrl($next = null) {
-        $next = ($next) ?: $this->config['logoutRedirectUrl'];
+        $next = ($next) ?: '/';
 
         return $this->getRedirectLoginHelper()
             ->getLogoutUrl($this->FacebookSession, Router::url($next, true));
     }
 
-    /**
+/**
  * Get Facebook User Id of connected user
  *
  * @return null|string
@@ -520,7 +520,7 @@ class FacebookApi {
  * @return bool
  */
     public static function log($msg, $type = LOG_DEBUG) {
-        if (Configure::write('debug') > 0) {
+        if (Configure::read('debug') > 0) {
             debug($msg);
         }
         return CakeLog::write($type, $msg, static::$logScopes);
