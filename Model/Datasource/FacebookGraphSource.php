@@ -80,7 +80,8 @@ class FacebookGraphSource extends DataSource {
 		//	$params = array();
 		//}
 
-		return $this->FacebookApi->graph($method, $path, $params);
+		$response = $this->FacebookApi->graph($method, $path, $params)->getResponse();
+        return (isset($response->data)) ? $response->data : $response;
 	}
 
 /**
