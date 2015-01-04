@@ -45,7 +45,7 @@ class FacebookApi {
 /**
  * @var Facebook\FacebookRedirectLoginHelper
  */
-    public $FacebookRedirectHelper;
+    public $FacebookRedirectLoginHelper;
 
 /**
  * @var array
@@ -106,7 +106,7 @@ class FacebookApi {
         $this->user = null;
         $this->userPermissions = null;
         $this->FacebookSession = null;
-        $this->FacebookRedirectHelper = null;
+        $this->FacebookRedirectLoginHelper = null;
 
         CakeSession::delete('Facebook.Auth');
         CakeSession::delete('Facebook.User');
@@ -237,32 +237,32 @@ class FacebookApi {
     }
 
 /**
+ * Get instance of FacebookRedirectLoginHelper
+ * 
  * @param null $next
  * @return FacebookRedirectLoginHelper
+ * @TODO Implement support for 'next' param
  */
     public function getRedirectLoginHelper($next = null) {
-        //$redirectUrl = ($redirectUrl) ?: $this->config['connectUrl'];
-        //return new FacebookRedirectLoginHelper(Router::url($redirectUrl, true));
-
-        if ($this->FacebookRedirectHelper === null) {
-            $params = array(
-                'next' => null,
-                //'rt' => uniqid()
-            );
-            $this->FacebookRedirectHelper = new FacebookRedirectLoginHelper(
-                Router::url($this->config['connectUrl'], true) // . '?' . http_build_query($params) // . '?next=' . urlencode($next)
+        if ($this->FacebookRedirectLoginHelper === null) {
+            $this->FacebookRedirectLoginHelper = new FacebookRedirectLoginHelper(
+                Router::url($this->config['connectUrl'], true)
             );
         }
-        return $this->FacebookRedirectHelper;
+        return $this->FacebookRedirectLoginHelper;
     }
 
 /**
- * @param array $scope
- * @param null $redirectUrl
+ * @param null|string $next
+ * @param array|string $scope
  * @param bool $displayAsPopup
  * @return string
  */
     public function getLoginUrl($next = null, $scope = array(), $displayAsPopup = false) {
+        if (is_string($scope)) {
+            $scope = explode(',', $scope);
+        }
+
         return $this->getRedirectLoginHelper($next)
             ->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
     }
@@ -328,6 +328,9 @@ class FacebookApi {
         return $this->userPermissions;
     }
 
+/**
+ * @see FacebookApi::validateUserPermission()
+ */
     public function checkUserPermission($permissions) {
         return self::validateUserPermission($this->getUserPermissions(), $permissions);
     }
