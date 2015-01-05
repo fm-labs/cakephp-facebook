@@ -14,7 +14,7 @@ class FacebookComponent extends Component {
 /**
  * @var Controller
  */
-    public $Controller;
+	public $Controller;
 
 /**
  * @var FacebookApi
@@ -24,18 +24,18 @@ class FacebookComponent extends Component {
 /**
  * @var bool
  */
-    public $useAuth = false;
+	public $useAuth = false;
 
 /**
  * @var bool
  */
-    public $useFlash = true;
+	public $useFlash = true;
 
 /**
  * @see Component::initialize()
  */
 	public function initialize(Controller $controller) {
-        $this->Controller = $controller;
+		$this->Controller = $controller;
 		$this->FacebookApi = FacebookApi::getInstance();
 	}
 
@@ -48,23 +48,23 @@ class FacebookComponent extends Component {
 /**
  * @see FacebookApi::getSession()
  */
-    public function getSession() {
-        return $this->FacebookApi->getSession();
-    }
+	public function getSession() {
+		return $this->FacebookApi->getSession();
+	}
 
 /**
  * @see FacebookApi::connect()
  */
-    public function connect() {
-        return $this->FacebookApi->connect();
-    }
+	public function connect() {
+		return $this->FacebookApi->connect();
+	}
 
 /**
  * @see FacebookApi::disconnect()
  */
-    public function disconnect() {
-        $this->FacebookApi->disconnect();
-    }
+	public function disconnect() {
+		$this->FacebookApi->disconnect();
+	}
 
 /**
  * @see FacebookApi::getLoginUrl()
@@ -83,30 +83,30 @@ class FacebookComponent extends Component {
 /**
  * @see FacebookApi::getUser()
  */
-    public function getUser($key = null) {
-        return $this->FacebookApi->getUser($key);
-    }
+	public function getUser($key = null) {
+		return $this->FacebookApi->getUser($key);
+	}
 
 /**
  * @see FacebookApi::reloadUser()
  */
-    public function reloadUser() {
-        $this->FacebookApi->reloadUser();
-    }
+	public function reloadUser() {
+		$this->FacebookApi->reloadUser();
+	}
 
 /**
  * Convenience wrapper for getUser()
  */
-    public function user($key = null) {
-        return $this->getUser($key);
-    }
+	public function user($key = null) {
+		return $this->getUser($key);
+	}
 
 /**
  * Provide access to the FacebookApi methods
  */
-    public function __call($method, $params) {
-        return call_user_func_array(array($this->FacebookApi, $method), $params);
-    }
+	public function __call($method, $params) {
+		return call_user_func_array(array($this->FacebookApi, $method), $params);
+	}
 
 /*****************************************
  *** PERMISSIONS
@@ -128,12 +128,12 @@ class FacebookComponent extends Component {
 
 /**
  * Request Permission(s)
+ *
  * Redirect to Facebook login page, where user has to grant permission
  *
- * @param string|array $perms Comma-separated string or array list of permissions
- * @param null|string $next
+ * @param string|array $perm Comma-separated string or array list of permissions
  */
-	public function requestUserPermission($perm, $next = null) {
+	public function requestUserPermission($perm) {
 		$loginUrl = $this->FacebookApi->getUserPermissionRequestUrl($perm);
 		$this->flash('Requesting Facebook permission', $loginUrl);
 	}
@@ -152,26 +152,26 @@ class FacebookComponent extends Component {
 /**
  * @see Controller::flash()
  */
-    public function flash($msg, $url, $pause = 2, $layout = 'Facebook.flash') {
-        if (!$this->useFlash) {
-            $this->redirect($url);
-            return;
-        }
-        $this->Controller->flash($msg, $url, $pause, $layout);
-    }
+	public function flash($msg, $url, $pause = 2, $layout = 'Facebook.flash') {
+		if (!$this->useFlash) {
+			$this->redirect($url);
+			return;
+		}
+		$this->Controller->flash($msg, $url, $pause, $layout);
+	}
 
 /**
  * @see Controller::redirect()
  */
-    public function redirect($url) {
-        $this->Controller->redirect($url);
-    }
+	public function redirect($url) {
+		$this->Controller->redirect($url);
+	}
 
 /**
  * @see Component::beforeRender()
  */
-    public function beforeRender(Controller $controller) {
-        $controller->helpers['Facebook.Facebook'] = array();
-    }
+	public function beforeRender(Controller $controller) {
+		$controller->helpers['Facebook.Facebook'] = array();
+	}
 
 }

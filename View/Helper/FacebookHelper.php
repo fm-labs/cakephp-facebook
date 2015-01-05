@@ -67,25 +67,25 @@ class FacebookHelper extends AppHelper {
 		return $this;
 	}
 
-    public function connectUrl() {
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect');
-    }
+	public function connectUrl() {
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect');
+	}
 
-    public function disconnectUrl() {
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'disconnect');
-    }
+	public function disconnectUrl() {
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'disconnect');
+	}
 
-    public function loginUrl() {
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login');
-    }
+	public function loginUrl() {
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login');
+	}
 
-    public function logoutUrl() {
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'logout');
-    }
+	public function logoutUrl() {
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'logout');
+	}
 
 /**
  * Returns facebook user data
@@ -96,18 +96,18 @@ class FacebookHelper extends AppHelper {
  */
 	public function user($key = null) {
 		if (!$this->Session->check('Facebook.User')) {
-            return null;
-        }
+			return null;
+		}
 
-        if ($key === null) {
-            return $this->Session->read('Facebook.User');
-        }
+		if ($key === null) {
+			return $this->Session->read('Facebook.User');
+		}
 
-        if ($this->Session->check('Facebook.User.' . (string) $key)) {
-            return $this->Session->read('Facebook.User.' . (string) $key);
-        }
+		if ($this->Session->check('Facebook.User.' . (string)$key)) {
+			return $this->Session->read('Facebook.User.' . (string)$key);
+		}
 
-        return null;
+		return null;
 	}
 
 /**
@@ -120,7 +120,7 @@ class FacebookHelper extends AppHelper {
 		if (!$userId) {
 			$userId = $this->user('id');
 		}
-        //@TODO fallback to default image if no userId is present
+		//@TODO fallback to default image if no userId is present
 
 		return "http://graph.facebook.com/" . (string)$userId . "/picture";
 	}
@@ -147,29 +147,28 @@ class FacebookHelper extends AppHelper {
  * @param string|array $perm
  * @return array|bool
  */
-    public function hasPermission($perm) {
-        $grantedPerms = (array) $this->Session->read('Facebook.UserPermissions');
-        return FacebookApi::validateUserPermission($grantedPerms, $perm);
-    }
+	public function hasPermission($perm) {
+		$grantedPerms = (array) $this->Session->read('Facebook.UserPermissions');
+		return FacebookApi::validateUserPermission($grantedPerms, $perm);
+	}
 
-    public function permissionRequestUrl($perm) {
-        if (is_array($perm)) {
-            $perm = implode(',', $perm);
-        }
+	public function permissionRequestUrl($perm) {
+		if (is_array($perm)) {
+			$perm = implode(',', $perm);
+		}
 
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_request', (string) $perm);
-    }
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_request', (string)$perm);
+	}
 
-    public function permissionRevokeUrl($perm) {
-        if (is_array($perm)) {
-            $perm = implode(',', $perm);
-        }
+	public function permissionRevokeUrl($perm) {
+		if (is_array($perm)) {
+			$perm = implode(',', $perm);
+		}
 
-        //@TODO fetch from FacebookApi
-        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_revoke', (string) $perm);
-    }
-
+		//@TODO fetch from FacebookApi
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_revoke', (string)$perm);
+	}
 
 /**
  * Returns the Facebook JavaScript SDK which should be included
@@ -478,9 +477,9 @@ SDK;
 
 			case self::RENDER_TYPE_IFRAME:
 			default:
-                if (Configure::read('debug') > 0) {
-                    throw new Exception(sprintf("FacebookHelper: Unsupported widget render type '%s'", $this->_renderType));
-                }
+				if (Configure::read('debug') > 0) {
+					throw new Exception(sprintf("FacebookHelper: Unsupported widget render type '%s'", $this->_renderType));
+				}
 		}
 
 		return false;

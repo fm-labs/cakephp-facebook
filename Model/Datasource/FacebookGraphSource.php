@@ -23,7 +23,7 @@ class FacebookGraphSource extends DataSource {
 	public function __construct($config = array()) {
 		parent::__construct($config);
 
-        $this->FacebookApi = FacebookApi::getInstance();
+		$this->FacebookApi = FacebookApi::getInstance();
 	}
 
 /**
@@ -35,7 +35,7 @@ class FacebookGraphSource extends DataSource {
  * @return mixed
  */
 	public function read(Model $model, $queryData = array(), $recursive = null) {
-        //@TODO Implement FacebookGraphSource::read()
+		//@TODO Implement FacebookGraphSource::read()
 		return false;
 	}
 
@@ -49,7 +49,7 @@ class FacebookGraphSource extends DataSource {
  * @return boolean Success
  */
 	public function update(Model $model, $fields = null, $values = null, $conditions = null) {
-        //@TODO Implement FacebookGraphSource::update()
+		//@TODO Implement FacebookGraphSource::update()
 		return false;
 	}
 
@@ -61,7 +61,7 @@ class FacebookGraphSource extends DataSource {
  * @return boolean Success
  */
 	public function delete(Model $model, $id = null) {
-        //@TODO Implement FacebookGraphSource::delete()
+		//@TODO Implement FacebookGraphSource::delete()
 		return false;
 	}
 
@@ -81,7 +81,7 @@ class FacebookGraphSource extends DataSource {
 		//}
 
 		$response = $this->FacebookApi->graph($method, $path, $params)->getResponse();
-        return (isset($response->data)) ? $response->data : $response;
+		return (isset($response->data)) ? $response->data : $response;
 	}
 
 /**
