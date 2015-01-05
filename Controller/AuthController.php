@@ -25,13 +25,10 @@ class AuthController extends FacebookAppController {
 	}
 
     protected function getRedirectUrl() {
-        /*
         if ($this->Components->enabled('Auth')) {
             return $this->Auth->redirectUrl($this->Session->read('Facebook.redirect_url'));
         }
         return ($this->Session->read('Facebook.redirect_url')) ?: '/';
-        */
-        return $this->Auth->redirectUrl();
     }
 
     protected function setRedirectUrl() {

@@ -337,7 +337,7 @@ class FacebookApi {
             $this->loadUserPermissions();
         }
 
-        return $this->userPermissions;
+        return (array) $this->userPermissions;
     }
 
     public function getUserPermissionRequestUrl($requestedPerms) {
@@ -381,7 +381,12 @@ class FacebookApi {
  * @return bool
  */
     public function revokeUserPermission($perm) {
-        $result = $this->graphDelete('/me/permissions/' . (string)$perm);
+        try {
+            $result = $this->graphDelete('/me/permissions/' . (string)$perm);
+        } catch (Exception $ex) {
+            $result = false;
+            $this->log($ex->getMessage(), LOG_WARNING);
+        }
 
         if (!$result) {
             $this->log(__d('facebook', "Failed to delete permission '%s'.", $perm));
@@ -389,8 +394,8 @@ class FacebookApi {
         }
         $this->log(__d('facebook', "Deleted permission: %s", $perm), 'info');
 
+        // reload permissions
         $this->loadUserPermissions(true);
-
         return true;
     }
 

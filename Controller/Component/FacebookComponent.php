@@ -101,8 +101,14 @@ class FacebookComponent extends Component {
         return $this->getUser($key);
     }
 
+/**
+ * Provide access to the FacebookApi methods
+ */
+    public function __call($method, $params) {
+        return call_user_func_array(array($this->FacebookApi, $method), $params);
+    }
 
-    /*****************************************
+/*****************************************
  *** PERMISSIONS
  *****************************************/
 
