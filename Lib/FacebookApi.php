@@ -88,7 +88,7 @@ class FacebookApi {
 	}
 
 /**
- * Connect Facebook user
+ * Connect Facebook user - Handle Connect Redirect from Facebook
  *
  * Attempts to load session from client redirect.
  * This method should be called when the Facebook OAuth Client Login Flow
@@ -99,9 +99,13 @@ class FacebookApi {
  */
     public function connect() {
         try {
+            // handle connect redirect
             if ($this->loadSessionFromRedirect()) {
 
+                // persist access token
                 $this->updateAccessToken();
+
+                // update user info and permissions
                 $this->loadUser(true);
                 $this->loadUserPermissions(true);
 
@@ -140,7 +144,7 @@ class FacebookApi {
             $accessToken = CakeSession::read('Facebook.Auth.accessToken');
             $session = new FacebookSession($accessToken);
 
-            //@TODO In Facebook SDK v4.1 validate() will return false instead of throwing an exception
+            //@TODO In Facebook SDK v4.1 FacebookSession::validate() will return false instead of throwing an exception
             $valid = false;
             try {
                 $valid = $session->validate();
