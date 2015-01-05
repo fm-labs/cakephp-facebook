@@ -47,7 +47,7 @@ class FacebookController extends FacebookAppController {
 		// Resume active session
 		if ($this->Facebook->getSession()) {
 			$this->Facebook->reloadUser();
-			$this->Facebook->flash("You are already connected with Facebook", $this->getRedirectUrl());
+			$this->Facebook->flash("You are already connected with Facebook", $this->_getRedirectUrl());
 
 			// Load session from redirect
 		} elseif ($this->Facebook->connect()) {
@@ -56,7 +56,7 @@ class FacebookController extends FacebookAppController {
 				$this->login();
 				return;
 			}
-			$this->Facebook->flash("Connected with Facebook", $this->getRedirectUrl());
+			$this->Facebook->flash("Connected with Facebook", $this->_getRedirectUrl());
 
 			// No session
 		} else {
@@ -85,12 +85,12 @@ class FacebookController extends FacebookAppController {
 		*/
 
 		if ($this->Auth->user()) {
-			$this->Facebook->flash('Already logged in', $this->getRedirectUrl());
+			$this->Facebook->flash('Already logged in', $this->_getRedirectUrl());
 
 		} elseif ($this->Auth->login()) {
-			$this->Facebook->flash('Login successful', $this->getRedirectUrl());
+			$this->Facebook->flash('Login successful', $this->_getRedirectUrl());
 		} else {
-			$this->setRedirectUrl($this->referer());
+			$this->_setRedirectUrl($this->referer());
 
 			//$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
 			$loginUrl = $this->Facebook->getLoginUrl();
