@@ -7,5 +7,9 @@ $config = array('Facebook' => array(
     // Connect URL
     'connectUrl' => '/facebook/connect/',
     // Default Login permissions
-    'defaultPermissions' => array('email')
+    'defaultPermissions' => array('email'),
+    // Enable Logging
+    'log' => true,
+    // Enable Debugging
+    'debug' => false,
 ));

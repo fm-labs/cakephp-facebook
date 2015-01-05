@@ -12,10 +12,10 @@ class FacebookController extends FacebookAppController {
 
     public $uses = array();
 
-    /**
-     * @see Controller::beforeFilter()
-     * @throws CakeException
-     */
+/**
+ * @see Controller::beforeFilter()
+ * @throws CakeException
+ */
     public function beforeFilter() {
         parent::beforeFilter();
 
@@ -35,15 +35,15 @@ class FacebookController extends FacebookAppController {
 
     }
 
-    /**
-     * Connect with facebook
-     *
-     * 1. Redirect the user to the facebook login dialog.
-     * 2. Facebook redirects the user back here.
-     * 3. Redirect user to the initial referer url (if available)
-     *
-     * @TODO Move to FacebookComponent
-     */
+/**
+ * Connect with facebook
+ *
+ * 1. Redirect the user to the facebook login dialog.
+ * 2. Facebook redirects the user back here.
+ * 3. Redirect user to the initial referer url (if available)
+ *
+ * @TODO Move to FacebookComponent
+ */
     public function connect() {
 
         // Resume active session
@@ -70,13 +70,12 @@ class FacebookController extends FacebookAppController {
         }
     }
 
-
-    /**
-     * Login with Facebook
-     * Requires AuthComponent with 'authenticate' set to 'Facebook.Facebook'
-     *
-     * @TODO Move to FacebookComponent
-     */
+/**
+ * Login with Facebook
+ * Requires AuthComponent with 'authenticate' set to 'Facebook.Facebook'
+ *
+ * @TODO Move to FacebookComponent
+ */
     public function login() {
         /*
         if (!$this->Components->enabled('Auth')) {
@@ -108,29 +107,29 @@ class FacebookController extends FacebookAppController {
         }
     }
 
-    /**
-     * Disconnect user from application
-     * without logging the user out of facebook itself
-     *
-     * @TODO Move to FacebookComponent
-     */
+/**
+ * Disconnect user from application
+ * without logging the user out of facebook itself
+ *
+ * @TODO Move to FacebookComponent
+ */
     public function disconnect() {
         $this->Facebook->disconnect();
         $this->Session->setFlash(__('Disconnected from Facebook'));
         $this->redirect(array('action' => 'connect'));
     }
 
-    /**
-     * Logout from facebook
-     *
-     * Disconnect
-     * Redirect client to facebook logout page
-     * Facebook redirects back to the initial referrer
-     *
-     * @return void
-     * @TODO Custom redirect URL
-     * @TODO Move to FacebookComponent
-     */
+/**
+ * Logout from facebook
+ *
+ * Disconnect
+ * Redirect client to facebook logout page
+ * Facebook redirects back to the initial referrer
+ *
+ * @return void
+ * @TODO Custom redirect URL
+ * @TODO Move to FacebookComponent
+ */
     public function logout() {
         $next = $this->referer();
 
@@ -139,20 +138,20 @@ class FacebookController extends FacebookAppController {
         $this->redirect($logoutUrl);
     }
 
-    /**
-     * Request permission
-     *
-     * @param string $perms Permission name. Comma-separated list for multiple permissions.
-     */
+/**
+ * Request permission
+ *
+ * @param string $perms Permission name. Comma-separated list for multiple permissions.
+ */
     public function permission_request($perms = null) {
         $this->Facebook->requestUserPermission($perms, $this->referer());
     }
 
-    /**
-     * Revoke permission
-     *
-     * @param string $perm
-     */
+/**
+ * Revoke permission
+ *
+ * @param string $perm
+ */
     public function permission_revoke($perm = null) {
         if ($this->Facebook->revokeUserPermission($perm)) {
             $this->Session->setFlash(__('Permission %s has been revoked', $perm));
@@ -162,18 +161,4 @@ class FacebookController extends FacebookAppController {
         $this->redirect($this->referer());
     }
 
-
-    /**
-     * Debug access token
-     */
-    public function token() {
-
-        if ($this->request->is('post') && isset($this->request->data['accessToken'])) {
-            $this->Session->write('Facebook.Auth.accessToken', $this->request->data['accessToken']);
-            $this->Session->setFlash('Updated Facebook Auth Token to: ' . $this->request->data['accessToken']);
-            $this->redirect(array('action' => 'token'));
-        } else {
-            $this->request->data = $this->Session->read('Facebook.Auth');
-        }
-    }
 }
