@@ -1,5 +1,11 @@
 <?php 
 $config = array('Facebook' => array(
-	'appId' => 'YOUR_APP_ID_GOES_HERE', // Facebook App Id
-	'appSecret' => 'YOUR_APP_SECRET_GOES_HERE'	// Facebook App Secret
+    // Facebook App ID
+    'appId' => null,
+    // Facebook App Secret
+    'appSecret' => null,
+    // Connect URL
+    'connectUrl' => '/facebook/connect/',
+    // Default Login permissions
+    'defaultPermissions' => array('email')
 ));

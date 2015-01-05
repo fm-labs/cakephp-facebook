@@ -36,10 +36,14 @@ class FacebookApi {
         'appId' => null,
         // Facebook App Secret
         'appSecret' => null,
-        // Internal connect URL
-        'connectUrl' => '/facebook/auth/connect/',
+        // Connect URL
+        'connectUrl' => '/facebook/connect/',
         // Default Login permissions
-        'permissions' => array('email')
+        'defaultPermissions' => array(),
+        // Enable Logging
+        'log' => true,
+        // Enable Debugging
+        'debug' => false,
     );
 
 /**
@@ -106,6 +110,7 @@ class FacebookApi {
         } catch (Exception $ex) {
             $this->log("CONNECT ERROR: " . $ex->getMessage());
         }
+        return false;
     }
 
 /**
@@ -151,6 +156,7 @@ class FacebookApi {
                 return true;
             }
         }
+        return false;
     }
 
 /**
@@ -164,6 +170,7 @@ class FacebookApi {
             $this->FacebookSession = $session;
             return true;
         }
+        return false;
     }
 
 /**
@@ -247,7 +254,8 @@ class FacebookApi {
 
 /**
  * Get instance of FacebookRedirectLoginHelper
- * 
+ *
+ * @param $redirectUrl
  * @return FacebookRedirectLoginHelper
  */
     public function getRedirectLoginHelper($redirectUrl = null) {
@@ -273,7 +281,7 @@ class FacebookApi {
         }
 
         // add default permissions
-        $scope += $this->config['permissions'];
+        $scope += $this->config['defaultPermissions'];
 
         return $this->getRedirectLoginHelper($redirectUrl)
             ->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
@@ -481,6 +489,22 @@ class FacebookApi {
     }
 
 /**
+ * Log wrapper
+ *
+ * @param $msg
+ * @param $type
+ */
+    public function log($msg, $type = LOG_DEBUG) {
+        if (Configure::read('debug') > 0 && $this->config['debug']) {
+            debug($msg);
+        }
+
+        if ($this->config['log']) {
+            CakeLog::write($type, $msg, static::$logScopes);
+        }
+    }
+
+/**
  * Get singleton instance
  *
  * @return FacebookApi
@@ -515,20 +539,6 @@ class FacebookApi {
         }
 
         return (!empty($missing)) ? $missing : true;
-    }
-
-/**
- * Log wrapper
- *
- * @param $msg
- * @param $type
- * @return bool
- */
-    public static function log($msg, $type = LOG_DEBUG) {
-        if (Configure::read('debug') > 0) {
-            debug($msg);
-        }
-        return CakeLog::write($type, $msg, static::$logScopes);
     }
 
 }

@@ -68,19 +68,23 @@ class FacebookHelper extends AppHelper {
 	}
 
     public function connectUrl() {
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'connect');
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect');
     }
 
     public function disconnectUrl() {
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'disconnect');
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'disconnect');
     }
 
     public function loginUrl() {
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'login');
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login');
     }
 
     public function logoutUrl() {
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'logout');
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'logout');
     }
 
 /**
@@ -116,6 +120,7 @@ class FacebookHelper extends AppHelper {
 		if (!$userId) {
 			$userId = $this->user('id');
 		}
+        //@TODO fallback to default image if no userId is present
 
 		return "http://graph.facebook.com/" . (string)$userId . "/picture";
 	}
@@ -151,14 +156,18 @@ class FacebookHelper extends AppHelper {
         if (is_array($perm)) {
             $perm = implode(',', $perm);
         }
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'permission_request', (string) $perm);
+
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_request', (string) $perm);
     }
 
     public function permissionRevokeUrl($perm) {
         if (is_array($perm)) {
             $perm = implode(',', $perm);
         }
-        return array('plugin' => 'facebook', 'controller' => 'auth', 'action' => 'permission_revoke', (string) $perm);
+
+        //@TODO fetch from FacebookApi
+        return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_revoke', (string) $perm);
     }
 
 
