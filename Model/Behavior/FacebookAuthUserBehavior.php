@@ -61,7 +61,7 @@ class FacebookAuthUserBehavior extends ModelBehavior {
 		}
 
 		if ($this->settings[$Model->alias]['sync'] === true) {
-			return $this->syncFacebookUser($Model, $fbUser);
+			return $Model->syncFacebookUser($fbUser);
 		}
 
 		return false;
