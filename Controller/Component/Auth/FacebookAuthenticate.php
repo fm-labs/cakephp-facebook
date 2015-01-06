@@ -50,7 +50,6 @@ class FacebookAuthenticate extends BaseAuthenticate {
  */
 	public function getUser(CakeRequest $request) {
 		if (!$this->FacebookApi->getSession() && !$this->FacebookApi->connect()) {
-			debug("FacebookAuthenticate::getUser() No active session");
 			return false;
 		}
 

@@ -40,6 +40,10 @@ class FacebookApi {
 		'connectUrl' => '/facebook/connect/',
 		// Default Login permissions
 		'defaultPermissions' => array(),
+		// Enable Authentication
+		'useAuth' => false,
+		// Enable Flash
+		'useFlash' => false,
 		// Enable Logging
 		'log' => true,
 		// Enable Debugging
@@ -489,6 +493,24 @@ class FacebookApi {
 	public function graphDelete($path) {
 		$req = $this->buildGraphRequest('DELETE', $path);
 		return $this->_executeGraphRequest($req);
+	}
+
+/**
+ * Get Config
+ *
+ * @param null $key
+ * @return array
+ */
+	public function getConfig($key = null) {
+		if ($key === null) {
+			return $this->config;
+		}
+
+		if (isset($this->config[$key])) {
+			return $this->config[$key];
+		}
+
+		return null;
 	}
 
 /**

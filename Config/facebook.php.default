@@ -8,6 +8,10 @@ $config = array('Facebook' => array(
     'connectUrl' => '/facebook/connect/',
     // Default Login permissions
     'defaultPermissions' => array('email'),
+    // Enable Authentication
+    'useAuth' => false,
+    // Enable Flash
+    'useFlash' => false,
     // Enable Logging
     'log' => true,
     // Enable Debugging

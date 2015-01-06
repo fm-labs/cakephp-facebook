@@ -7,29 +7,61 @@ App::uses('FacebookAppController','Facebook.Controller');
  */
 class FacebookController extends FacebookAppController {
 
-	public $components = array('Session', 'Facebook.Facebook');
+	public $components = array('Session');
 
 	public $uses = array();
 
 /**
  * @see Controller::beforeFilter()
- * @throws CakeException
  */
 	public function beforeFilter() {
 		parent::beforeFilter();
 
+		if (!$this->Components->loaded('Facebook')) {
+			$this->Components->load('Facebook.Facebook');
+		}
+
+		//@TODO Move to FacebookComponent
 		if ($this->Components->enabled('Auth')) {
-			$this->Auth->allow('index', 'connect', 'disconnect', 'login', 'token');
+			if ($this->Facebook->useAuth) {
+				$this->Auth->allow('connect', 'login');
+			} else {
+				$this->Auth->allow('connect', 'disconnect');
+			}
 		}
 	}
 
+/**
+ * Get redirect url
+ *
+ * @return mixed|string
+ * @TODO Move to FacebookComponent
+ */
 	protected function _getRedirectUrl() {
-		//if ($this->Components->enabled('Auth')) {
-		//    return $this->Auth->redirectUrl($this->Session->read('Facebook.redirect'));
-		//}
-		return ($this->Session->read('Facebook.redirect')) ?: '/';
+		$redirectUrl = '/';
+
+		if ($this->Components->enabled('Auth')) {
+			$redirectUrl = $this->Auth->redirectUrl();
+		}
+
+		if ($this->Session->check('Facebook.redirect')) {
+			$redirectUrl = $this->Session->read('Facebook.redirect');
+			$this->Session->delete('Facebook.redirect');
+		}
+
+		if (Router::normalize($redirectUrl) == Router::normalize(array('action' => 'connect'))) {
+			$redirectUrl = '/';
+		}
+
+		return $redirectUrl;
 	}
 
+/**
+ * Set redirect url
+ *
+ * @param $redirectUrl
+ * @TODO Move to FacebookComponent
+ */
 	protected function _setRedirectUrl($redirectUrl) {
 		$this->Session->write('Facebook.redirect', $redirectUrl);
 	}
@@ -42,29 +74,26 @@ class FacebookController extends FacebookAppController {
  * 3. Redirect user to the initial referer url (if available)
  *
  * @TODO Move to FacebookComponent
+ * @TODO Support for 'scope' and 'next' query params
  */
 	public function connect() {
-		// Resume active session
 		if ($this->Facebook->getSession()) {
+			// Resume facebook session
 			$this->Facebook->reloadUser();
 			$this->Facebook->flash("You are already connected with Facebook", $this->_getRedirectUrl());
 
-			// Load session from redirect
 		} elseif ($this->Facebook->connect()) {
-			//@TODO
-			if ($this->Components->enabled('Auth')) {
+			// Created facebook session
+			if ($this->Facebook->useAuth) {
 				$this->login();
 				return;
 			}
 			$this->Facebook->flash("Connected with Facebook", $this->_getRedirectUrl());
 
-			// No session
 		} else {
-			//$referrer = $this->referer();
-			//$this->Session->write('Facebook.redirect', $referrer);
-
-			$loginUrl = $this->Facebook->getLoginUrl();
-			$this->Facebook->flash('Connect with facebook', $loginUrl);
+			// No active facebook session
+			$this->_setRedirectUrl($this->referer());
+			$this->Facebook->flash('Connect with facebook', $this->Facebook->getLoginUrl());
 		}
 	}
 
@@ -73,28 +102,25 @@ class FacebookController extends FacebookAppController {
  * Requires AuthComponent with 'authenticate' set to 'Facebook.Facebook'
  *
  * @TODO Move to FacebookComponent
+ * @TODO Support for 'scope' and 'next' query params
  */
 	public function login() {
-		/*
-		if (!$this->Components->enabled('Auth')) {
+		if (!$this->Components->enabled('Auth') || !$this->Facebook->useAuth) {
 			if (Configure::read('debug') > 0) {
 				throw new CakeException(__('Authentication is not enabled'));
 			}
 			throw new NotFoundException();
 		}
-		*/
 
 		if ($this->Auth->user()) {
 			$this->Facebook->flash('Already logged in', $this->_getRedirectUrl());
 
 		} elseif ($this->Auth->login()) {
 			$this->Facebook->flash('Login successful', $this->_getRedirectUrl());
+
 		} else {
 			$this->_setRedirectUrl($this->referer());
-
-			//$loginSuccessUrl = array('action' => 'login_success', '?' => array('redirect_url' => $this->Auth->redirectUrl()));
-			$loginUrl = $this->Facebook->getLoginUrl();
-			$this->Facebook->flash('Login with facebook', $loginUrl);
+			$this->Facebook->flash('Login with facebook', $this->Facebook->getLoginUrl());
 		}
 	}
 
@@ -105,9 +131,10 @@ class FacebookController extends FacebookAppController {
  * @TODO Move to FacebookComponent
  */
 	public function disconnect() {
+		$this->_setRedirectUrl($this->referer());
+
 		$this->Facebook->disconnect();
-		$this->Session->setFlash(__('Disconnected from Facebook'));
-		$this->redirect(array('action' => 'connect'));
+		$this->Facebook->flash(__('Disconnected from Facebook'), $this->_getRedirectUrl());
 	}
 
 /**
@@ -122,11 +149,22 @@ class FacebookController extends FacebookAppController {
  * @TODO Move to FacebookComponent
  */
 	public function logout() {
-		$next = $this->referer();
+		$this->Facebook->getSession();
+		if ($this->Facebook->user()) {
+			$this->_setRedirectUrl($this->referer());
+			$logoutUrl = $this->Facebook->getLogoutUrl(array('action' => 'logout_success'));
+			$this->Facebook->flash(__('Logout'), $logoutUrl);
+		} else {
+			$this->Facebook->flash(__('Already logged out'), $this->_getRedirectUrl());
+		}
+	}
 
+	public function logout_success() {
+		if ($this->Facebook->useAuth) {
+			$this->Auth->logout();
+		}
 		$this->Facebook->disconnect();
-		$logoutUrl = $this->Facebook->getLogoutUrl($next);
-		$this->redirect($logoutUrl);
+		$this->Facebook->flash(__('You have been logged out'), $this->_getRedirectUrl());
 	}
 
 /**

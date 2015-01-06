@@ -29,7 +29,7 @@ class FacebookComponent extends Component {
 /**
  * @var bool
  */
-	public $useFlash = true;
+	public $useFlash = false;
 
 /**
  * @see Component::initialize()
@@ -37,12 +37,22 @@ class FacebookComponent extends Component {
 	public function initialize(Controller $controller) {
 		$this->Controller = $controller;
 		$this->FacebookApi = FacebookApi::getInstance();
+
+		// override settings from config
+		$this->_set($this->FacebookApi->getConfig());
 	}
 
 /**
  * @see Component::startup()
  */
 	public function startup(Controller $controller) {
+	}
+
+/**
+ * Provide access to the FacebookApi methods
+ */
+	public function __call($method, $params) {
+		return call_user_func_array(array($this->FacebookApi, $method), $params);
 	}
 
 /**
@@ -100,17 +110,6 @@ class FacebookComponent extends Component {
 	public function user($key = null) {
 		return $this->getUser($key);
 	}
-
-/**
- * Provide access to the FacebookApi methods
- */
-	public function __call($method, $params) {
-		return call_user_func_array(array($this->FacebookApi, $method), $params);
-	}
-
-/*****************************************
- *** PERMISSIONS
- *****************************************/
 
 /**
  * @see FacebookApi::getUserPermissions()

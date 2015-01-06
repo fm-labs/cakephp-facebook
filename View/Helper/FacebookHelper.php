@@ -67,9 +67,12 @@ class FacebookHelper extends AppHelper {
 		return $this;
 	}
 
-	public function connectUrl() {
+	public function connectUrl($next = null, $scope = array()) {
 		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect');
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect', '?' => array(
+			'scope' => implode(',', (array)$scope),
+			'next' => urlencode($next)
+		));
 	}
 
 	public function disconnectUrl() {
@@ -77,9 +80,12 @@ class FacebookHelper extends AppHelper {
 		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'disconnect');
 	}
 
-	public function loginUrl() {
+	public function loginUrl($next = null, $scope = array()) {
 		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login');
+		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login', '?' => array(
+			'scope' => implode(',', (array)$scope),
+			'next' => urlencode($next)
+		));
 	}
 
 	public function logoutUrl() {
@@ -148,7 +154,7 @@ class FacebookHelper extends AppHelper {
  * @return array|bool
  */
 	public function hasPermission($perm) {
-		$grantedPerms = (array) $this->Session->read('Facebook.UserPermissions');
+		$grantedPerms = (array)$this->Session->read('Facebook.UserPermissions');
 		return FacebookApi::validateUserPermission($grantedPerms, $perm);
 	}
 
