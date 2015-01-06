@@ -1,5 +1,5 @@
 <?php
-App::uses('FacebookAppController','Facebook.Controller');
+App::uses('FacebookAppController', 'Facebook.Controller');
 
 /**
  * @property FacebookComponent $Facebook
