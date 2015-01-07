@@ -1,4 +1,6 @@
 <?php
+App::uses('FacebookSyncException', 'Facebook.Lib/Exception');
+
 /**
  * Class FacebookAuthUserBehavior
  */
@@ -10,8 +12,7 @@ class FacebookAuthUserBehavior extends ModelBehavior {
 	protected $_defaultSettings = array(
 		'fields' => array(
 			'facebook_uid' => 'facebook_uid'
-		),
-		'sync' => true,
+		)
 	);
 
 /**
@@ -22,6 +23,8 @@ class FacebookAuthUserBehavior extends ModelBehavior {
 		if (!isset($this->settings[$Model->alias])) {
 			$this->settings[$Model->alias] = array_merge($this->_defaultSettings, $settings);
 		}
+
+		//@TODO Check if field is present in model schema
 	}
 
 /**
@@ -52,46 +55,28 @@ class FacebookAuthUserBehavior extends ModelBehavior {
  *
  * @param Model $Model
  * @param $fbUser
- * @return int User model Id
+ * @return int Model Id
  */
 	public function findFacebookUser(Model $Model, $fbUser) {
 		$user = $this->findByFacebookUserId($Model, $fbUser['id'], array('recursive' => -1));
 		if ($user) {
 			return $user[$Model->alias][$Model->primaryKey];
 		}
-
-		if ($this->settings[$Model->alias]['sync'] === true) {
-			return $Model->syncFacebookUser($fbUser);
-		}
-
 		return false;
 	}
 
 /**
  * Attempt to sync Facebook user info
  *
- * Override method in subclass or Model class
+ * Override this method in subclass or Model class
  * for a more sophisticated synchronisation mechanism
  *
  * @param Model $Model
  * @param $fbUser
- * @return bool
+ * @return int Model Id of synced user
+ * @throws FacebookSyncException
  */
 	public function syncFacebookUser(Model $Model, $fbUser) {
-		return $this->_addFacebookUser($Model, $fbUser);
-	}
-
-/**
- * Attempt to create a new model entry by Facebook user info
- *
- * Override method in subclass or Model class
- * for a more sophisticated synchronisation mechanism
- *
- * @param Model $Model
- * @param $fbUser
- * @return bool
- */
-	protected function _addFacebookUser(Model $Model, $fbUser) {
 		// Extract facebook UID
 		$fbUserId = $fbUser['id'];
 		unset($fbUser['id']);
@@ -100,13 +85,12 @@ class FacebookAuthUserBehavior extends ModelBehavior {
 		$user = $fbUser;
 		$user[$this->settings[$Model->alias]['fields']['facebook_uid']] = $fbUserId;
 
-		// Add flag
-		//$user['_facebook'] = true;
-
 		// Push
 		$Model->create(array($Model->alias => $user));
 		if (!$Model->save()) {
-			return false;
+			throw new FacebookSyncException(
+				__('Failed to sync facebook user with ID %s with Model %s', $fbUserId, $Model->alias)
+			);
 		}
 
 		return $Model->id;
