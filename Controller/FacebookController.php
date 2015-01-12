@@ -85,19 +85,36 @@ class FacebookController extends FacebookAppController {
 		} elseif ($this->Facebook->connect()) {
 			// Created facebook session
 			if ($this->Facebook->useAuth) {
-				$this->login();
+				if ($this->_login()) {
+					$this->Facebook->flash('You are now logged in with Facebook', $this->Facebook->getConnectRedirectUrl());
+				} else {
+					$this->Facebook->flash("Logging in with Facebook failed", '/');
+				}
 				return;
+			} else {
+				$this->Facebook->flash("Connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 			}
-			$this->Facebook->flash("Connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 
-		} elseif ($this->Components->enabled('Auth')) {
-			// No active facebook session
-			//$this->_setRedirectUrl($this->referer('/', true));
-			//$this->Facebook->flash('Connect with facebook', $this->Facebook->getLoginUrl());
-			$this->Facebook->flash('Please login', $this->Auth->loginAction);
 		} else {
-			$this->redirect('/');
+			$this->Facebook->flash("Connecting with Facebook failed", '/');
 		}
+	}
+
+	protected function _login() {
+		if (!$this->Components->enabled('Auth') || !$this->Facebook->useAuth) {
+			if (Configure::read('debug') > 0) {
+				throw new CakeException(__('Authentication is not enabled'));
+			}
+			return false;
+		}
+
+		if ($this->Auth->user()) {
+			return true;
+		} elseif ($this->Auth->login()) {
+			return true;
+		}
+
+		return false;
 	}
 
 /**
@@ -108,23 +125,7 @@ class FacebookController extends FacebookAppController {
  * @TODO Support for 'scope' and 'next' query params
  */
 	public function login() {
-		if (!$this->Components->enabled('Auth') || !$this->Facebook->useAuth) {
-			if (Configure::read('debug') > 0) {
-				throw new CakeException(__('Authentication is not enabled'));
-			}
-			throw new NotFoundException();
-		}
-
-		if ($this->Auth->user()) {
-			$this->Facebook->flash('Already logged in', $this->Facebook->getConnectRedirectUrl());
-
-		} elseif ($this->Auth->login()) {
-			$this->Facebook->flash('Login successful', $this->Facebook->getConnectRedirectUrl());
-
-		} else {
-			//$this->_setRedirectUrl($this->referer());
-			$this->Facebook->flash('Login with facebook', $this->Facebook->getLoginUrl());
-		}
+		$this->Facebook->flash('Login with Facebook', $this->Facebook->getLoginUrl());
 	}
 
 /**
