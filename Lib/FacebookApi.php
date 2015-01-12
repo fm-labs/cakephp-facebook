@@ -38,6 +38,8 @@ class FacebookApi {
 		'appSecret' => null,
 		// Connect URL
 		'connectUrl' => '/facebook/connect/',
+		// Connect Redirect Url
+		'connectRedirectUrl' => '/',
 		// Default Login permissions
 		'defaultPermissions' => array(),
 		// Enable Authentication
@@ -292,6 +294,10 @@ class FacebookApi {
 
 		return $this->getRedirectLoginHelper($redirectUrl)
 			->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
+	}
+
+	public function getConnectRedirectUrl() {
+		return $this->config['connectRedirectUrl'];
 	}
 
 /**

@@ -44,10 +44,10 @@ class FacebookController extends FacebookAppController {
 		//	$redirectUrl = $this->Auth->redirectUrl();
 		//}
 
-		if ($this->Session->check('Facebook.redirect')) {
-			$redirectUrl = $this->Session->read('Facebook.redirect');
-			$this->Session->delete('Facebook.redirect');
-		}
+		//if ($this->Session->check('Facebook.redirect')) {
+		//	$redirectUrl = $this->Session->read('Facebook.redirect');
+		//	$this->Session->delete('Facebook.redirect');
+		//}
 
 		if (Router::normalize($redirectUrl) == Router::normalize(array('action' => 'connect'))) {
 			$redirectUrl = '/';
@@ -80,7 +80,7 @@ class FacebookController extends FacebookAppController {
 		if ($this->Facebook->getSession()) {
 			// Resume facebook session
 			$this->Facebook->reloadUser();
-			$this->Facebook->flash("You are already connected with Facebook", $this->_getRedirectUrl());
+			$this->Facebook->flash("You are already connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 
 		} elseif ($this->Facebook->connect()) {
 			// Created facebook session
@@ -88,7 +88,7 @@ class FacebookController extends FacebookAppController {
 				$this->login();
 				return;
 			}
-			$this->Facebook->flash("Connected with Facebook", $this->_getRedirectUrl());
+			$this->Facebook->flash("Connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 
 		} else {
 			// No active facebook session
@@ -113,10 +113,10 @@ class FacebookController extends FacebookAppController {
 		}
 
 		if ($this->Auth->user()) {
-			$this->Facebook->flash('Already logged in', $this->_getRedirectUrl());
+			$this->Facebook->flash('Already logged in', $this->Facebook->getConnectRedirectUrl());
 
 		} elseif ($this->Auth->login()) {
-			$this->Facebook->flash('Login successful', $this->_getRedirectUrl());
+			$this->Facebook->flash('Login successful', $this->Facebook->getConnectRedirectUrl());
 
 		} else {
 			//$this->_setRedirectUrl($this->referer());
