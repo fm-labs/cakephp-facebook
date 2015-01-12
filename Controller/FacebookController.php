@@ -90,10 +90,13 @@ class FacebookController extends FacebookAppController {
 			}
 			$this->Facebook->flash("Connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 
-		} else {
+		} elseif ($this->Components->enabled('Auth')) {
 			// No active facebook session
 			//$this->_setRedirectUrl($this->referer('/', true));
-			$this->Facebook->flash('Connect with facebook', $this->Facebook->getLoginUrl());
+			//$this->Facebook->flash('Connect with facebook', $this->Facebook->getLoginUrl());
+			$this->Facebook->flash('Please login', $this->Auth->loginAction);
+		} else {
+			$this->redirect('/');
 		}
 	}
 

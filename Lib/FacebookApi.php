@@ -104,6 +104,8 @@ class FacebookApi {
  */
 	public function connect() {
 		try {
+			$this->log("CONNECTING WITH FACEBOOK");
+
 			// handle connect redirect
 			if ($this->_loadSessionFromRedirect()) {
 
@@ -114,10 +116,11 @@ class FacebookApi {
 				$this->_loadUser(true);
 				$this->_loadUserPermissions(true);
 
+				$this->log(sprintf("Facebook user %s connected", $this->getUserId()));
 				return true;
 			}
 		} catch (Exception $ex) {
-			$this->log("CONNECT ERROR: " . $ex->getMessage());
+			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), LOG_ERROR);
 		}
 		return false;
 	}
