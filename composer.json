@@ -9,9 +9,15 @@
             "email": "flowmotionlabs@gmail.com"
         }
     ],
+    "repositories": [
+        {
+            "url": "https://github.com/fm-labs/facebook-php-sdk-v4.git",
+            "type": "git"
+        }
+    ],
     "require": {
         "composer/installers": "~1.0",
-        "facebook/php-sdk-v4" : "4.0.*"
+        "facebook/php-sdk-v4" : "dev-4.0-dev"
     },
     "extra": {
         "installer-name": "Facebook"
