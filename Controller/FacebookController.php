@@ -92,7 +92,7 @@ class FacebookController extends FacebookAppController {
 
 		} else {
 			// No active facebook session
-			$this->_setRedirectUrl($this->referer());
+			//$this->_setRedirectUrl($this->referer('/', true));
 			$this->Facebook->flash('Connect with facebook', $this->Facebook->getLoginUrl());
 		}
 	}
@@ -119,7 +119,7 @@ class FacebookController extends FacebookAppController {
 			$this->Facebook->flash('Login successful', $this->_getRedirectUrl());
 
 		} else {
-			$this->_setRedirectUrl($this->referer());
+			//$this->_setRedirectUrl($this->referer());
 			$this->Facebook->flash('Login with facebook', $this->Facebook->getLoginUrl());
 		}
 	}
