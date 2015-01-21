@@ -142,25 +142,40 @@ class FacebookHelper extends AppHelper {
 	public function sdk() {
 		$html = <<<SDK
 <div id="fb-root"></div>
-<script>
-window.fbAsyncInit = function() {
-    // init the FB JS SDK
-    FB.init({
-      appId      : '{{APP_ID}}',
-      channelUrl : '{{CHANNEL_URL}}',
-      status     : {{STATUS}},
-      xfbml      : {{XFBML}},
-      cookie     : {{COOKIE}},
-    });
-  };
-</script>
+{{INIT_SCRIPT}}
 <script>(function(d, s, id) {
   var js, fjs = d.getElementsByTagName(s)[0];
   if (d.getElementById(id)) return;
   js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/{{LOCALE}}/all.js";
+  js.src = "//connect.facebook.net/{{LOCALE}}/{{SRC}}";
   fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));</script>
+SDK;
+// #xfbml=1&appId={{APP_ID}}&version={{VERSION}}
+		$replacements = array(
+			'{{SRC}}' => (Configure::read('debug') < 1) ? "sdk.js" : "sdk/debug.js",
+			'{{APP_ID}}' => (string)Configure::read('Facebook.appId'),
+			'{{LOCALE}}' => (string)$this->_locale,
+			'{{CHANNEL_URL}}' => '//WWW.YOUR_DOMAIN.COM/channel.html',
+			'{{STATUS}}' => 'true',
+			'{{XFBML}}' => 'true',
+			'{{COOKIE}}' => 'true',
+			'{{VERSION}}' => FacebookApi::GRAPH_API_VERSION,
+			'{{INIT_SCRIPT}}' => $this->_loadSdkInitScript()
+		);
+		return str_replace(array_keys($replacements), array_values($replacements), $html);
+	}
+
+	protected function _loadSdkInitScript() {
+		$html = <<<SDK
+// init the FB JS SDK
+FB.init({
+  appId: '{{APP_ID}}',
+  status: {{STATUS}},
+  xfbml: {{XFBML}},
+  cookie     : {{COOKIE}},
+  version	 : '{{VERSION}}'
+});
 SDK;
 
 		$replacements = array(
@@ -169,9 +184,16 @@ SDK;
 			'{{CHANNEL_URL}}' => '//WWW.YOUR_DOMAIN.COM/channel.html',
 			'{{STATUS}}' => 'true',
 			'{{XFBML}}' => 'true',
-			'{{COOKIE}}' => 'true'
+			'{{COOKIE}}' => 'true',
+			'{{VERSION}}' => FacebookApi::GRAPH_API_VERSION
 		);
-		return str_replace(array_keys($replacements), array_values($replacements), $html);
+		$init = str_replace(array_keys($replacements), array_values($replacements), $html);
+
+		$script = $this->_View->element('Facebook.facebook/sdk_init_script', array(
+			'fbInit' => $init
+		));
+
+		return $script;
 	}
 
 /***************************************

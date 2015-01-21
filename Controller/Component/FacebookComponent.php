@@ -90,7 +90,10 @@ class FacebookComponent extends Component {
  * Attempt to create a facebook session from facebook's connect redirect
  */
 	public function connect() {
-		if ($this->FacebookApi->getSession() || $this->FacebookApi->handleConnectRedirect()) {
+		if ($this->FacebookApi->getSession()
+			|| $this->FacebookApi->handleConnectRedirect()
+			|| $this->FacebookApi->handleJavascriptLogin()
+		) {
 			$this->FacebookApi->reloadUser();
 			return true;
 		}

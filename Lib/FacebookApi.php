@@ -3,6 +3,7 @@
 use Facebook\FacebookSession;
 use Facebook\FacebookRequest;
 use Facebook\FacebookRedirectLoginHelper;
+use Facebook\FacebookJavaScriptLoginHelper;
 use Facebook\FacebookRequestException;
 use Facebook\GraphUser;
 
@@ -102,7 +103,7 @@ class FacebookApi {
  */
 	public function handleConnectRedirect() {
 		try {
-			$this->log("CONNECTING WITH FACEBOOK");
+			debug("CONNECTING WITH FACEBOOK");
 
 			// handle connect redirect
 			if ($this->_loadSessionFromRedirect()) {
@@ -120,6 +121,22 @@ class FacebookApi {
 		} catch (Exception $ex) {
 			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), 'error');
 		}
+		return false;
+	}
+
+	public function handleJavascriptLogin() {
+		if ($this->_loadSessionFromJavascriptHelper()) {
+			// persist access token
+			$this->_updateAccessToken();
+
+			// update user info and permissions
+			$this->_loadUser(true);
+			$this->_loadUserPermissions(true);
+
+			$this->log(sprintf("Facebook user %s connected via javascript", $this->getUserId()));
+			return true;
+		}
+
 		return false;
 	}
 
@@ -148,12 +165,14 @@ class FacebookApi {
 	protected function _loadSessionFromPersistentData() {
 		if (CakeSession::check('Facebook.Auth.accessToken')) {
 			$accessToken = CakeSession::read('Facebook.Auth.accessToken');
-			$session = new FacebookSession($accessToken);
 
 			//@TODO In Facebook SDK v4.1 FacebookSession::validate() will return false instead of throwing an exception
-			$valid = false;
 			try {
-				$valid = $session->validate();
+				$session = new FacebookSession($accessToken);
+				if ($session->validate()) {
+					$this->FacebookSession = $session;
+					return true;
+				}
 			} catch (\Facebook\FacebookSDKException $ex) {
 				// do nothing
 				//@TODO Log that session has expired
@@ -161,16 +180,36 @@ class FacebookApi {
 			} catch (Exception $ex) {
 				throw $ex;
 			}
-
-			if ($valid) {
-				$this->FacebookSession = $session;
-				return true;
-			}
 		}
 		return false;
 	}
 
 /**
+ * Load session with JavascriptHelper
+ *
+ * @return bool
+ */
+	protected function _loadSessionFromJavascriptHelper() {
+		$helper = new FacebookJavaScriptLoginHelper();
+		try {
+			$session = $helper->getSession();
+			if ($session && $session->validate()) {
+				$this->FacebookSession = $session;
+				return true;
+			}
+		} catch(FacebookRequestException $ex) {
+			// When Facebook returns an error
+			debug($ex->getMessage());
+		} catch(\Exception $ex) {
+			// When validation fails or other local issues
+			debug($ex->getMessage());
+		}
+
+		return false;
+	}
+
+/**
+ * @return bool
  * @throws Exception
  */
 	protected function _loadSessionFromRedirect() {
@@ -242,8 +281,7 @@ class FacebookApi {
 	protected function _restoreSession() {
 		if (
 		$this->_loadSessionFromPersistentData()
-			//|| $this->loadSessionFromJavascriptHelper()
-			//|| $this->_loadSessionFromRedirect()
+		//|| $this->_loadSessionFromJavascriptHelper()
 		) {
 			$this->_loadUser();
 			$this->_loadUserPermissions();
