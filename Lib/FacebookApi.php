@@ -298,10 +298,6 @@ class FacebookApi {
 			->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
 	}
 
-	public function getConnectRedirectUrl() {
-		return $this->config['connectRedirectUrl'];
-	}
-
 /**
  * @param null $next
  * @return string
