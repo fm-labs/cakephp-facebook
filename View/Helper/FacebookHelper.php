@@ -67,32 +67,6 @@ class FacebookHelper extends AppHelper {
 		return $this;
 	}
 
-	public function connectUrl($next = null, $scope = array()) {
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'connect', '?' => array(
-			'scope' => implode(',', (array)$scope),
-			'next' => urlencode($next)
-		));
-	}
-
-	public function disconnectUrl() {
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'disconnect');
-	}
-
-	public function loginUrl($next = null, $scope = array()) {
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'login', '?' => array(
-			'scope' => implode(',', (array)$scope),
-			'next' => urlencode($next)
-		));
-	}
-
-	public function logoutUrl() {
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'logout');
-	}
-
 /**
  * Returns facebook user data
  *
