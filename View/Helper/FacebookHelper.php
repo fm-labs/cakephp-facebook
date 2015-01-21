@@ -132,24 +132,6 @@ class FacebookHelper extends AppHelper {
 		return FacebookApi::validateUserPermission($grantedPerms, $perm);
 	}
 
-	public function permissionRequestUrl($perm) {
-		if (is_array($perm)) {
-			$perm = implode(',', $perm);
-		}
-
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_request', (string)$perm);
-	}
-
-	public function permissionRevokeUrl($perm) {
-		if (is_array($perm)) {
-			$perm = implode(',', $perm);
-		}
-
-		//@TODO fetch from FacebookApi
-		return array('plugin' => 'facebook', 'controller' => 'facebook', 'action' => 'permission_revoke', (string)$perm);
-	}
-
 /**
  * Returns the Facebook JavaScript SDK which should be included
  * right after the opening <body> tag in the layout

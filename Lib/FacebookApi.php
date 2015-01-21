@@ -102,7 +102,7 @@ class FacebookApi {
  *
  * @TODO (Auto-)Exchange short-lived token for an extended token
  */
-	public function connect() {
+	public function handleConnectRedirect() {
 		try {
 			$this->log("CONNECTING WITH FACEBOOK");
 
@@ -159,6 +159,7 @@ class FacebookApi {
 			} catch (\Facebook\FacebookSDKException $ex) {
 				// do nothing
 				//@TODO Log that session has expired
+				//debug($ex->getMessage());
 			} catch (Exception $ex) {
 				throw $ex;
 			}
@@ -405,6 +406,10 @@ class FacebookApi {
  * @return bool
  */
 	public function revokeUserPermission($perm) {
+		if (!$this->getSession()) {
+			return false;
+		}
+
 		try {
 			$result = $this->graphDelete('/me/permissions/' . (string)$perm);
 		} catch (Exception $ex) {
