@@ -77,24 +77,16 @@ class FacebookController extends FacebookAppController {
  * @TODO Support for 'scope' and 'next' query params
  */
 	public function connect() {
-		if ($this->Facebook->getSession()) {
+		if ($this->Facebook->getSession() || $this->Facebook->connect()) {
 			// Resume facebook session
 			$this->Facebook->reloadUser();
-			$this->Facebook->flash("You are already connected with Facebook", $this->Facebook->getConnectRedirectUrl());
 
-		} elseif ($this->Facebook->connect()) {
-			// Created facebook session
+			$redirect = $this->Facebook->getConnectRedirectUrl();
 			if ($this->Facebook->useAuth) {
-				if ($this->_login()) {
-					$this->Facebook->flash('You are now logged in with Facebook', $this->Facebook->getConnectRedirectUrl());
-				} else {
-					$this->Facebook->flash("Logging in with Facebook failed", '/');
-				}
-				return;
-			} else {
-				$this->Facebook->flash("Connected with Facebook", $this->Facebook->getConnectRedirectUrl());
+				$redirect = $this->Auth->loginAction;
 			}
 
+			$this->Facebook->flash("Connected with Facebook", $redirect);
 		} else {
 			$this->Facebook->flash("Connecting with Facebook failed", '/');
 		}

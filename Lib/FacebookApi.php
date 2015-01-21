@@ -120,7 +120,7 @@ class FacebookApi {
 				return true;
 			}
 		} catch (Exception $ex) {
-			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), LOG_ERROR);
+			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), 'error');
 		}
 		return false;
 	}
@@ -409,7 +409,7 @@ class FacebookApi {
 			$result = $this->graphDelete('/me/permissions/' . (string)$perm);
 		} catch (Exception $ex) {
 			$result = false;
-			$this->log($ex->getMessage(), LOG_WARNING);
+			$this->log($ex->getMessage(), 'warning');
 		}
 
 		if (!$result) {
@@ -447,11 +447,11 @@ class FacebookApi {
 
 		} catch(FacebookRequestException $ex) {
 			// When Facebook returns an error
-			$this->log($ex->getMessage(), LOG_ERR);
+			$this->log($ex->getMessage(), 'error');
 			throw $ex;
 		} catch(\Exception $ex) {
 			// When validation fails or other local issues
-			$this->log($ex->getMessage(), LOG_ERR);
+			$this->log($ex->getMessage(), 'error');
 			throw $ex;
 		}
 	}
@@ -528,7 +528,7 @@ class FacebookApi {
  * @param $msg
  * @param $type
  */
-	public function log($msg, $type = LOG_DEBUG) {
+	public function log($msg, $type = 'debug') {
 		if (Configure::read('debug') > 0 && $this->config['debug']) {
 			debug($msg);
 		}
