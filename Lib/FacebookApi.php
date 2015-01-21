@@ -38,8 +38,6 @@ class FacebookApi {
 		'appSecret' => null,
 		// Connect URL
 		'connectUrl' => '/facebook/connect/',
-		// Connect Redirect Url
-		'connectRedirectUrl' => '/',
 		// Default Login permissions
 		'defaultPermissions' => array(),
 		// Enable Authentication
