@@ -34,6 +34,11 @@ class FacebookComponent extends Component {
 	public $useFlash = false;
 
 /**
+ * @var bool
+ */
+	public $handleJavascriptLogin = false;
+
+/**
  * @see Component::initialize()
  */
 	public function initialize(Controller $controller) {
@@ -92,7 +97,7 @@ class FacebookComponent extends Component {
 	public function connect() {
 		if ($this->FacebookApi->getSession()
 			|| $this->FacebookApi->handleConnectRedirect()
-			|| $this->FacebookApi->handleJavascriptLogin()
+			|| ($this->handleJavascriptLogin === true && $this->FacebookApi->handleJavascriptLogin())
 		) {
 			$this->FacebookApi->reloadUser();
 			return true;
