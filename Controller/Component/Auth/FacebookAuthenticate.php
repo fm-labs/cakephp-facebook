@@ -53,7 +53,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @see BaseAuthenticate::getUser()
  */
 	public function getUser(CakeRequest $request) {
-		if (!$this->FacebookApi->getSession() && !$this->FacebookApi->handleConnectRedirect()) {
+		if (!$this->FacebookApi->getSession()) {
 			return false;
 		}
 
