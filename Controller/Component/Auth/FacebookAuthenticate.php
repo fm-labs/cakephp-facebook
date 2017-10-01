@@ -1,12 +1,14 @@
 <?php
 App::uses('BaseAuthenticate', 'Controller/Component/Auth');
+App::uses('FacebookApi', 'Facebook.Lib');
+App::uses('FacebookSyncException', 'Facebook.Lib/Exception');
 
 class FacebookAuthenticate extends BaseAuthenticate {
 
 /**
  * Settings for this object.
  *
- * Default settings:
+ * Common Auth adapter settings:
  * - `fields` The fields to use to identify a user by.
  * - `userModel` The model name of the User, defaults to User.
  * - `scope` Additional conditions to use when looking up and authenticating users,
@@ -14,31 +16,36 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * - `recursive` The value of the recursive key passed to find(). Defaults to 0.
  * - `contain` Extra models to contain and store in session.
  *
- * FacebookAuth settings:
- * - `defaultPermissions` The default facebook login scopes
- *
  * @var array
  */
 	public $settings = array(
-        'userModel' => 'User',
-        'fields' => array(
-            'facebook_uid' => 'facebook_uid'
-        ),
+		'userModel' => 'User',
 		'scope' => array(),
 		'recursive' => 0,
 		'contain' => null,
-		'defaultPermissions' => array(),
+		'fields' => array(
+			'facebook_uid' => 'facebook_uid'
+		),
+		'sync' => false,
 	);
 
-    public function __construct(ComponentCollection $collection, $settings) {
-        parent::__construct($collection, $settings);
-    }
+/**
+ * @var FacebookApi
+ */
+	public $FacebookApi;
+
+	public function __construct(ComponentCollection $collection, $settings) {
+		parent::__construct($collection, $settings);
+
+		$this->FacebookApi = FacebookApi::getInstance();
+	}
 
 /**
  * @see BaseAuthenticate::authenticate()
  */
 	public function authenticate(CakeRequest $request, CakeResponse $response) {
-        debug("FacebookAuthenticate::authenticate()");
+		//@TODO Filter request from facebook servers
+
 		return $this->getUser($request);
 	}
 
@@ -46,92 +53,88 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @see BaseAuthenticate::getUser()
  */
 	public function getUser(CakeRequest $request) {
-        debug("FacebookAuthenticate::getUser()");
-		$fbUser = FacebookConnect::user();
-        debug($fbUser);
-
-		// No facebook user is connected
-        /*
-         * {
-              "id": "123456789",
-              "name": "John Doe",
-              "first_name": "John",
-              "last_name": "Doe",
-              "link": "https://www.facebook.com/john.doe",
-              "username": "john.doe",
-              "gender": "male",
-              "timezone": 1,
-              "locale": "en_US",
-              "verified": true,
-              "updated_time": "2013-01-01T22:22:22+0000"
-            }
-         */
-
-        if (!$fbUser) {
+		if (!$this->FacebookApi->getSession()) {
 			return false;
 		}
 
-		// @todo check default permissions
+		$fbUser = $this->FacebookApi->getUser();
 
 		// A facebook user is connected, but no user model selected
-        // So return facebook user info
 		if (!$this->settings['userModel']) {
 			return $fbUser;
 		}
 
-        return $this->_findFacebookUser($fbUser);
+		return $this->_findFacebookUser($fbUser);
 	}
 
-    /**
-     * Find user by facebook user info the cakephp way
-     *
-     * @param $fbUser
-     * @return mixed
-     */
-    protected function _findFacebookUser($fbUser) {
-        $Model = ClassRegistry::init($this->settings['userModel']);
+/**
+ * @param $fbUser Facebook user data
+ * @return array|bool Model user data
+ * @throws FacebookSyncException
+ * @throws Exception
+ */
+	protected function _findFacebookUser($fbUser) {
+		$Model = ClassRegistry::init($this->settings['userModel']);
 
-        // attach FacebookAuthUser behavior
-        if (!$Model->Behaviors->loaded('FacebookAuthUser')) {
-            $config = array(
-                'fields' => $this->settings['fields']
-            );
-            $Model->Behaviors->load('Facebook.FacebookAuthUser', $config);
-        }
+		// attach FacebookAuthUser behavior
+		if (!$Model->Behaviors->loaded('FacebookAuthUser')) {
+			$config = array(
+				'fields' => $this->settings['fields']
+			);
+			$Model->Behaviors->load('Facebook.FacebookAuthUser', $config);
+		}
 
-        // sync facebook user
-        $userId = call_user_func(array($Model, 'syncFacebookUser'), $fbUser);
-        if (!$userId) {
-            return false;
-        }
+		// find user
+		//@TODO Set Auth error flash message on error
+		try {
+			$modelId = $Model->findFacebookUser($fbUser);
 
-        // @todo fix BaseAuthenticate::_findUser() to work with custom user model which use an custom alias
-        //$user = $this->_findUser(array($Model->alias . '.' . $Model->primaryKey => $userId));
+			// sync facebook user, if enabled
+			if (!$modelId && $this->settings['sync'] === true) {
+				$modelId = $Model->syncFacebookUser($fbUser);
+			}
 
-        $conditions = array($Model->alias . '.' . $Model->primaryKey => $userId);
-        if (!empty($this->settings['scope'])) {
-            $conditions = array_merge($conditions, $this->settings['scope']);
-        }
-        $result = $Model->find('first', array(
-            'conditions' => $conditions,
-            'recursive' => $this->settings['recursive'],
-            'contain' => $this->settings['contain'],
-        ));
-        if (empty($result) || empty($result[$Model->alias])) {
-            return false;
-        }
-        $user = $result[$Model->alias];
-        /*
-        if (
-            isset($conditions[$Model->alias . '.' . $fields['password']]) ||
-            isset($conditions[$fields['password']])
-        ) {
-            unset($user[$fields['password']]);
-        }
-        */
-        unset($result[$Model->alias]);
-        return array_merge($user, $result);
-    }
+			if (!$modelId) {
+				throw new FacebookSyncException(
+					sprintf("Facebook user with ID '%s' not found in Model '%s'", $fbUser['id'], $Model->alias)
+				);
+			}
+		} catch (FacebookSyncException $ex) {
+			$this->FacebookApi->log('Sync error: ' . $ex->getMessage(), LOG_ERR);
+			throw $ex;
+
+		} catch (Exception $ex) {
+			throw $ex;
+		}
+
+		// @todo fix BaseAuthenticate::_findUser() to work with custom user model which uses a custom alias
+		//$user = $this->_findUser(array($Model->alias . '.' . $Model->primaryKey => $userId));
+
+		// BaseAuthenticate::_findUser() workaround
+		$conditions = array($Model->alias . '.' . $Model->primaryKey => $modelId);
+		if (!empty($this->settings['scope'])) {
+			$conditions = array_merge($conditions, $this->settings['scope']);
+		}
+		$result = $Model->find('first', array(
+			'conditions' => $conditions,
+			'recursive' => $this->settings['recursive'],
+			'contain' => $this->settings['contain'],
+		));
+		if (empty($result) || empty($result[$Model->alias])) {
+			return false;
+		}
+		$user = $result[$Model->alias];
+		/*
+		if (
+			isset($conditions[$Model->alias . '.' . $fields['password']]) ||
+			isset($conditions[$fields['password']])
+		) {
+			unset($user[$fields['password']]);
+		}
+		*/
+		unset($result[$Model->alias]);
+		return array_merge($user, $result);
+	}
 
 /**
  * @see BaseAuthenticate::logout()
@@ -139,7 +142,7 @@ class FacebookAuthenticate extends BaseAuthenticate {
  * @return void
  */
 	public function logout($user) {
-		FacebookConnect::getInstance()->disconnect(false);
+		$this->FacebookApi->disconnect();
 	}
 
 }

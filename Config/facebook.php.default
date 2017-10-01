@@ -1,0 +1,19 @@
+<?php 
+$config = array('Facebook' => array(
+    // Facebook App ID
+    'appId' => null,
+    // Facebook App Secret
+    'appSecret' => null,
+    // Connect URL
+    'connectUrl' => '/facebook/connect/',
+    // Default Login permissions
+    'defaultPermissions' => array('email'),
+    // Enable Authentication
+    'useAuth' => false,
+    // Enable Flash
+    'useFlash' => false,
+    // Enable Logging
+    'log' => true,
+    // Enable Debugging
+    'debug' => false,
+));

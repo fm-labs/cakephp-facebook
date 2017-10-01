@@ -1,35 +1,29 @@
 <?php
-//App::uses('FacebookAuthException','Facebook.Lib');
+
 App::uses('DataSource', 'Model/Datasource');
 App::uses('FacebookApi', 'Facebook.Lib');
 
-class FacebookGraphSource extends DataSource {
-
 /**
- * Base config
+ * Class FacebookGraphSource
  *
- * @var array
- * @deprecated Use facebook config file instead
+ * !!! DRAFT !!!
+ * !!! DO NOT USE IN PRODUCTION !!!
  */
-	protected $_baseConfig = array(
-		'appId' => '',
-		'appSecret' => ''
-	);
+class FacebookGraphSource extends DataSource {
 
 /**
  * @var FacebookApi
  */
-	public $FB;
+	public $FacebookApi;
 
 /**
- * The datasource configuration will be ignored.
- * Credentials will be read from the facebook configuration file
  *
  * @param array $config
  */
 	public function __construct($config = array()) {
-		$this->FB = FacebookApi::getInstance();
 		parent::__construct($config);
+
+		$this->FacebookApi = FacebookApi::getInstance();
 	}
 
 /**
@@ -41,6 +35,7 @@ class FacebookGraphSource extends DataSource {
  * @return mixed
  */
 	public function read(Model $model, $queryData = array(), $recursive = null) {
+		//@TODO Implement FacebookGraphSource::read()
 		return false;
 	}
 
@@ -54,6 +49,7 @@ class FacebookGraphSource extends DataSource {
  * @return boolean Success
  */
 	public function update(Model $model, $fields = null, $values = null, $conditions = null) {
+		//@TODO Implement FacebookGraphSource::update()
 		return false;
 	}
 
@@ -65,6 +61,7 @@ class FacebookGraphSource extends DataSource {
  * @return boolean Success
  */
 	public function delete(Model $model, $id = null) {
+		//@TODO Implement FacebookGraphSource::delete()
 		return false;
 	}
 
@@ -78,12 +75,13 @@ class FacebookGraphSource extends DataSource {
  * @return mixed
  */
 	public function query(Model $model, $path, $method = 'GET', $params = array()) {
-		if ($method === 'GET') {
-			$path = $this->buildPath($path, $params);
-			$params = array();
-		}
+		//if ($method === 'GET') {
+		//	$path = $this->buildPath($path, $params);
+		//	$params = array();
+		//}
 
-		return $this->FB->api($path, $method, $params);
+		$response = $this->FacebookApi->graph($method, $path, $params)->getResponse();
+		return (isset($response->data)) ? $response->data : $response;
 	}
 
 /**

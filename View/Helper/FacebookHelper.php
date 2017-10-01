@@ -1,11 +1,10 @@
 <?php
-Configure::load('facebook');
-
 App::uses('AppHelper', 'View/Helper');
-App::uses('FacebookConnect', 'Facebook.Lib');
+App::uses('FacebookApi', 'Facebook.Lib');
 
 /**
  * @property HtmlHelper $Html
+ * @property SessionHelper $Session
  */
 class FacebookHelper extends AppHelper {
 
@@ -76,7 +75,19 @@ class FacebookHelper extends AppHelper {
  * @return mixed
  */
 	public function user($key = null) {
-		return FacebookConnect::user($key);
+		if (!$this->Session->check('Facebook.User')) {
+			return null;
+		}
+
+		if ($key === null) {
+			return $this->Session->read('Facebook.User');
+		}
+
+		if ($this->Session->check('Facebook.User.' . (string)$key)) {
+			return $this->Session->read('Facebook.User.' . (string)$key);
+		}
+
+		return null;
 	}
 
 /**
@@ -89,6 +100,7 @@ class FacebookHelper extends AppHelper {
 		if (!$userId) {
 			$userId = $this->user('id');
 		}
+		//@TODO fallback to default image if no userId is present
 
 		return "http://graph.facebook.com/" . (string)$userId . "/picture";
 	}
@@ -109,33 +121,61 @@ class FacebookHelper extends AppHelper {
 	}
 
 /**
+ * Check user permission(s)
+ *
+ * @see FacebookApi::validateUserPermission
+ * @param string|array $perm
+ * @return array|bool
+ */
+	public function hasPermission($perm) {
+		$grantedPerms = (array)$this->Session->read('Facebook.UserPermissions');
+		return FacebookApi::validateUserPermission($grantedPerms, $perm);
+	}
+
+/**
  * Returns the Facebook JavaScript SDK which should be included
  * right after the opening <body> tag in the layout
  *
  * @return string
+ * @TODO Channel URL
  */
 	public function sdk() {
 		$html = <<<SDK
 <div id="fb-root"></div>
-<script>
-window.fbAsyncInit = function() {
-    // init the FB JS SDK
-    FB.init({
-      appId      : '{{APP_ID}}',
-      channelUrl : '{{CHANNEL_URL}}',
-      status     : {{STATUS}},
-      xfbml      : {{XFBML}},
-      cookie     : {{COOKIE}},
-    });
-  };
-</script>
+{{INIT_SCRIPT}}
 <script>(function(d, s, id) {
   var js, fjs = d.getElementsByTagName(s)[0];
   if (d.getElementById(id)) return;
   js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/{{LOCALE}}/all.js";
+  js.src = "//connect.facebook.net/{{LOCALE}}/{{SRC}}";
   fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));</script>
+SDK;
+// #xfbml=1&appId={{APP_ID}}&version={{VERSION}}
+		$replacements = array(
+			'{{SRC}}' => (Configure::read('debug') < 1) ? "sdk.js" : "sdk/debug.js",
+			'{{APP_ID}}' => (string)Configure::read('Facebook.appId'),
+			'{{LOCALE}}' => (string)$this->_locale,
+			'{{CHANNEL_URL}}' => '//WWW.YOUR_DOMAIN.COM/channel.html',
+			'{{STATUS}}' => 'true',
+			'{{XFBML}}' => 'true',
+			'{{COOKIE}}' => 'true',
+			'{{VERSION}}' => FacebookApi::GRAPH_API_VERSION,
+			'{{INIT_SCRIPT}}' => $this->_loadSdkInitScript()
+		);
+		return str_replace(array_keys($replacements), array_values($replacements), $html);
+	}
+
+	protected function _loadSdkInitScript() {
+		$html = <<<SDK
+// init the FB JS SDK
+FB.init({
+  appId: '{{APP_ID}}',
+  status: {{STATUS}},
+  xfbml: {{XFBML}},
+  cookie     : {{COOKIE}},
+  version	 : '{{VERSION}}'
+});
 SDK;
 
 		$replacements = array(
@@ -144,9 +184,16 @@ SDK;
 			'{{CHANNEL_URL}}' => '//WWW.YOUR_DOMAIN.COM/channel.html',
 			'{{STATUS}}' => 'true',
 			'{{XFBML}}' => 'true',
-			'{{COOKIE}}' => 'true'
+			'{{COOKIE}}' => 'true',
+			'{{VERSION}}' => FacebookApi::GRAPH_API_VERSION
 		);
-		return str_replace(array_keys($replacements), array_values($replacements), $html);
+		$init = str_replace(array_keys($replacements), array_values($replacements), $html);
+
+		$script = $this->_View->element('Facebook.facebook/sdk_init_script', array(
+			'fbInit' => $init
+		));
+
+		return $script;
 	}
 
 /***************************************
@@ -414,7 +461,9 @@ SDK;
 
 			case self::RENDER_TYPE_IFRAME:
 			default:
-				return "FacebookHelper: Render type " . $this->_renderType . " not implemented yet";
+				if (Configure::read('debug') > 0) {
+					throw new Exception(sprintf("FacebookHelper: Unsupported widget render type '%s'", $this->_renderType));
+				}
 		}
 
 		return false;

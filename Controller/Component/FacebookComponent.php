@@ -1,6 +1,8 @@
 <?php
 App::uses('Component', 'Controller/Component');
-App::uses('FacebookConnect', 'Facebook.Lib');
+App::uses('FacebookApi', 'Facebook.Lib');
+
+use Facebook\FacebookRequest;
 
 /**
  * Facebook Component
@@ -17,234 +19,255 @@ class FacebookComponent extends Component {
 	public $Controller;
 
 /**
- * Automatically connect user on initialize.
- * If set to FALSE, requires calling connect() manually (e.g. from the controller)
- * Default: TRUE
- *
- * @var bool
+ * @var FacebookApi
  */
-	public $autoConnect = false;
+	public $FacebookApi;
 
 /**
- * Automatically load FacebookHelper before rendering
- * Default: TRUE
- *
  * @var bool
  */
-	public $useHelper = true;
+	public $useAuth = false;
 
 /**
- * Auto enables Facebook Authentication (if AuthComponent is loaded)
- * Default: TRUE
- *
  * @var bool
  */
-	public $useAuth = true;
+	public $useFlash = false;
 
 /**
- * Use flash messages for redirects
- * Default: TRUE
- *
  * @var bool
  */
-	public $useFlash = true;
-
-/**
- * @var FacebookConnect
- */
-	public $FacebookConnect;
+	public $handleJavascriptLogin = false;
 
 /**
  * @see Component::initialize()
- * @param Controller $controller
  */
 	public function initialize(Controller $controller) {
-		$this->Controller =& $controller;
-		$this->FacebookConnect = FacebookConnect::getInstance();
+		$this->Controller = $controller;
+		$this->FacebookApi = FacebookApi::getInstance();
 
-		// auto connect
-		if ($this->autoConnect) {
-			$this->connect();
-		}
-
-		// auto load Facebook Authentication
-		/*
-		if ($this->useAuth
-				&& isset($this->Controller->Auth)
-				&& !array_key_exists('Facebook.Facebook',$this->Controller->Auth->authenticate)
-				&& !in_array('Facebook.Facebook',$this->Controller->Auth->authenticate))
-		{
-			$this->Controller->Auth->authenticate[] = 'Facebook.Facebook';
-		}
-		*/
+		// override settings from config
+		$this->_set($this->FacebookApi->getConfig());
 	}
 
 /**
  * @see Component::startup()
- * @param Controller $controller
  */
 	public function startup(Controller $controller) {
-		// if user is not authenticated but logged in into facebook
-		// try to authenticate/sync
-		/*
-		if ($this->useAuth
-				&& !CakeSession::read('FacebookConnect.authLogout')
-				&& !$controller->Auth->user()
-				&& $this->FacebookConnect->getUser())
-		{
-			$controller->Auth->login($this->FacebookConnect->getUser());
-		}
-		*/
+		$this->FacebookApi->getSession();
 	}
 
 /**
- * Connect with Facebook
- *
- * @return void
+ * Provide access to the FacebookApi methods
  */
-	public function connect() {
-		try {
-			$this->FacebookConnect->connect();
-		} catch (Exception $e) {
-			debug($e);
-			throw $e;
-		}
+	public function __call($method, $params) {
+		return call_user_func_array(array($this->FacebookApi, $method), $params);
 	}
 
 /**
- * Disconnect application from Facebook,
- * but do not log the user out of Facebook itself
- *
- * @param bool $destroyFacebookSession
- * @return void
+ * @see FacebookApi::getSession()
  */
-	public function disconnect($destroyFacebookSession = false) {
-		$this->FacebookConnect->disconnect($destroyFacebookSession);
-	}
-
-	public function login() {
-		//@todo implement me
+	public function getSession() {
+		return $this->FacebookApi->getSession();
 	}
 
 /**
- * Logout user from application and Facebook
- *
- * @param string|array $redirectUrl
+ * @see FacebookApi::getLoginUrl()
  */
-	public function logout($redirectUrl = null) {
-		if (!$redirectUrl) {
-			$redirectUrl = $this->Controller->referer();
-		}
-
-		$logoutUrl = $this->getLogoutUrl($redirectUrl);
-		$this->flash(__('Disconnecting from facebook'), $logoutUrl);
-	}
-
-    public function updateUserInfo() {
-        $this->FacebookConnect->updateUserInfo();
-    }
-
-/**
- * Return facebook user data
- *
- * @param null|string $key
- * @return mixed, $pluginRoute = false
- */
-	public function user($key = null) {
-		return $this->FacebookConnect->getUser($key);
+	public function getLoginUrl($scope = array()) {
+		return $this->FacebookApi->getLoginUrl(null, $scope);
 	}
 
 /**
- * Refresh FacebookConnect session
- *
- * @param array|string $redirectUrl
- */
-	public function refresh($redirectUrl = null) {
-		$this->FacebookConnect->refresh();
-		if ($redirectUrl) {
-			// @todo: $this->Controller->redirect($redirectUrl);
-		}
-	}
-
-/**
- * @see FacebookConnect::getLoginUrl()
- */
-	public function getLoginUrl($redirectUrl = null, $scope = array()) {
-		return $this->FacebookConnect->getLoginUrl($redirectUrl, $scope);
-	}
-
-/**
- * @see FacebookConnect::getLogoutUrl()
+ * @see FacebookApi::getLogoutUrl()
  */
 	public function getLogoutUrl($redirectUrl = null) {
-		return $this->FacebookConnect->getLogoutUrl($redirectUrl);
+		return $this->FacebookApi->getLogoutUrl($redirectUrl);
 	}
 
 /**
- * @see Controller::flash()
- * @param $msg
- * @param $url
- * @param int $pause
- * @param string $layout
- * @return void
+ * @see FacebookApi::getUser()
  */
-	public function flash($msg, $url, $pause = 2, $layout = 'flash') {
-		if (!$this->useFlash) {
-			$this->Controller->redirect($url);
-			return;
+	public function getUser($key = null) {
+		return $this->FacebookApi->getUser($key);
+	}
+
+/**
+ * Attempt to create a facebook session from facebook's connect redirect
+ */
+	public function connect() {
+		if ($this->FacebookApi->getSession()
+			|| $this->FacebookApi->handleConnectRedirect()
+			|| ($this->handleJavascriptLogin === true && $this->FacebookApi->handleJavascriptLogin())
+		) {
+			$this->FacebookApi->reloadUser();
+			return true;
 		}
-		$this->Controller->flash($msg, $url, $pause, $layout);
+
+		return false;
 	}
 
-/*****************************************
- *** PERMISSIONS
- *****************************************/
-
 /**
- * @see FacebookConnect::getPermissions()
+ * @see FacebookApi::disconnect()
  */
-	public function getPermissions() {
-		return $this->FacebookConnect->getPermissions();
+	public function disconnect() {
+		$this->FacebookApi->disconnect();
+		return true;
 	}
 
 /**
- * @see FacebookConnect::checkPermission()
+ * Attempt to authenticate user from facebook session
+ *
+ * @return bool
+ * @throws CakeException
  */
-	public function checkPermission($perms) {
-		return $this->FacebookConnect->checkPermission($perms);
+	public function login() {
+		// start facebook session
+		if (!$this->connect()) {
+			return false;
+		}
+
+		// check preconditions
+		if (!$this->useAuth) {
+			return true;
+		}
+
+		if (!$this->Controller->Components->loaded('Auth')) {
+			throw new CakeException("Auth component not loaded");
+		}
+
+		//@TODO check if FacebookAuthenticate is attached to AuthComponent
+
+		//@TODO check if already authenticated
+
+		// authenticate
+		if ($this->Controller->Auth->login()) {
+			return true;
+		}
+
+		return false;
 	}
 
 /**
- * Request Permission(s)
+ * Logout
+ *
+ * Log out from app and Facebook
+ */
+	public function logout($next = null) {
+		if ($this->useAuth) {
+			$next = ($next) ?: $this->Controller->Auth->logoutRedirect;
+			// facebook logout url has to be built before triggering Auth::logout()
+			// as the facebook session will be disconnected on logout
+			$logoutUrl = $this->FacebookApi->getLogoutUrl($next);
+			$this->Controller->Auth->logout();
+		} else {
+			$logoutUrl = $this->FacebookApi->getLogoutUrl($next);
+		}
+		$this->flash('Logout', $logoutUrl);
+	}
+
+/**
+ * @see FacebookApi::reloadUser()
+ */
+	public function reloadUser() {
+		$this->FacebookApi->reloadUser();
+	}
+
+/**
+ * Convenience wrapper for getUser()
+ */
+	public function user($key = null) {
+		return $this->getUser($key);
+	}
+
+/**
+ * @see FacebookApi::getUserPermissions()
+ */
+	public function getUserPermissions() {
+		return $this->FacebookApi->getUserPermissions();
+	}
+
+/**
+ * @see FacebookApi::checkUserPermission()
+ */
+	public function checkUserPermission($perm) {
+		return $this->FacebookApi->checkUserPermission($perm);
+	}
+
+/**
+ * Request Permission(s) via OAuth Dialog
+ *
  * Redirect to Facebook login page, where user has to grant permission
  *
- * @param string|array $perms Comma-separated string or array list of permissions
- * @param null|string $redirectUrl
+ * @param string|array $perm Comma-separated string or array list of permissions
+ * @param string|null $next Internal redirect url after returning back from facebook
  */
-	public function requestPermission($perms, $redirectUrl = null) {
-		$loginUrl = $this->getLoginUrl($redirectUrl, $perms);
+	public function requestUserPermission($perm, $next = null) {
+		$this->setRedirectUrl($next);
+		$loginUrl = $this->FacebookApi->getUserPermissionRequestUrl($perm);
 		$this->flash('Requesting Facebook permission', $loginUrl);
 	}
 
 /**
- * Revoke Permission
+ * Revoke Permission via Graph API
  *
- * @see FacebookConnect::deletePermission()
+ * @see FacebookApi::deleteUserPermission()
  * @param string $perm Permission name
  * @return bool
  */
-	public function revokePermission($perm) {
-		return $this->FacebookConnect->deletePermission($perm);
+	public function revokeUserPermission($perm) {
+		return $this->FacebookApi->revokeUserPermission($perm);
 	}
 
 /**
  * @see Component::beforeRender()
  */
 	public function beforeRender(Controller $controller) {
-		// auto load FacebookHelper
-		if ($this->useHelper) {
-			$controller->helpers['Facebook.Facebook'] = array();
+		$controller->helpers['Facebook.Facebook'] = array();
+	}
+
+/**
+ * @see Controller::flash()
+ */
+	public function flash($msg, $url, $pause = 2, $layout = 'Facebook.flash') {
+		if (!$this->useFlash) {
+			$this->redirect($url);
+			return;
 		}
+		$this->Controller->flash($msg, $url, $pause, $layout);
+	}
+
+/**
+ * @see Controller::redirect()
+ */
+	public function redirect($url) {
+		$this->Controller->redirect($url);
+	}
+
+/**
+ * Get redirect url
+ *
+ * @return mixed|string
+ */
+	public function getRedirectUrl() {
+		$redirectUrl = '/';
+		if ($this->Session->check('Facebook.redirect')) {
+			$redirectUrl = $this->Session->read('Facebook.redirect');
+			$this->Session->delete('Facebook.redirect');
+		}
+
+		return $redirectUrl;
+	}
+
+/**
+ * Set redirect url
+ *
+ * @param $redirectUrl
+ */
+	public function setRedirectUrl($redirectUrl = null) {
+		if ($redirectUrl === null) {
+			$redirectUrl = $this->Controller->request->here;
+		}
+		$this->Session->write('Facebook.redirect', $redirectUrl);
 	}
 
 }
