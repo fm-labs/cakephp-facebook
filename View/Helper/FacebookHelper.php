@@ -174,8 +174,10 @@ FB.init({
   status: {{STATUS}},
   xfbml: {{XFBML}},
   cookie     : {{COOKIE}},
-  version	 : '{{VERSION}}'
+  version	 : '{{VERSION}}',
+  autoLogAppEvents: true
 });
+FB.AppEvents.logPageView();
 SDK;
 
 		$replacements = array(

@@ -53,7 +53,6 @@ class FacebookComponent extends Component {
  * @see Component::startup()
  */
 	public function startup(Controller $controller) {
-		$this->FacebookApi->getSession();
 	}
 
 /**
@@ -61,13 +60,6 @@ class FacebookComponent extends Component {
  */
 	public function __call($method, $params) {
 		return call_user_func_array(array($this->FacebookApi, $method), $params);
-	}
-
-/**
- * @see FacebookApi::getSession()
- */
-	public function getSession() {
-		return $this->FacebookApi->getSession();
 	}
 
 /**
@@ -95,15 +87,7 @@ class FacebookComponent extends Component {
  * Attempt to create a facebook session from facebook's connect redirect
  */
 	public function connect() {
-		if ($this->FacebookApi->getSession()
-			|| $this->FacebookApi->handleConnectRedirect()
-			|| ($this->handleJavascriptLogin === true && $this->FacebookApi->handleJavascriptLogin())
-		) {
-			$this->FacebookApi->reloadUser();
-			return true;
-		}
-
-		return false;
+		return $this->FacebookApi->connect();
 	}
 
 /**

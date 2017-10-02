@@ -46,17 +46,15 @@ class FacebookAuthenticate extends BaseAuthenticate {
 	public function authenticate(CakeRequest $request, CakeResponse $response) {
 		//@TODO Filter request from facebook servers
 
-		return $this->getUser($request);
+		if ($request->query('facebook') == 1 && $this->FacebookApi->connect()) {
+			return $this->getUser($request);
+		}
 	}
 
 /**
  * @see BaseAuthenticate::getUser()
  */
 	public function getUser(CakeRequest $request) {
-		if (!$this->FacebookApi->getSession()) {
-			return false;
-		}
-
 		$fbUser = $this->FacebookApi->getUser();
 
 		// A facebook user is connected, but no user model selected

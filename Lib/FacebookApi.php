@@ -1,11 +1,7 @@
 <?php
 
-use Facebook\FacebookSession;
 use Facebook\FacebookRequest;
-use Facebook\FacebookRedirectLoginHelper;
-use Facebook\FacebookJavaScriptLoginHelper;
-use Facebook\FacebookRequestException;
-use Facebook\GraphUser;
+use Facebook\Helpers\FacebookRedirectLoginHelper;
 
 App::uses('CakeSession', 'Model/Datasource');
 
@@ -17,12 +13,12 @@ class FacebookApi {
 /**
  * CakePHP Facebook API version
  */
-	const VERSION = '2.0';
+	const VERSION = '2.1';
 
 /**
  * Facebook Graph API version
  */
-	const GRAPH_API_VERSION = FacebookRequest::GRAPH_API_VERSION;
+	const GRAPH_API_VERSION = 'v2.10';
 
 /**
  * @var array
@@ -52,12 +48,12 @@ class FacebookApi {
 	);
 
 /**
- * @var Facebook\FacebookSession
+ * @var Facebook\Facebook
  */
-	public $FacebookSession;
+	public $fb;
 
 /**
- * @var Facebook\FacebookRedirectLoginHelper
+ * @var FacebookRedirectLoginHelper
  */
 	public $FacebookRedirectLoginHelper;
 
@@ -83,12 +79,28 @@ class FacebookApi {
 			throw new InvalidArgumentException('Facebook AppID or AppSecret missing');
 		}
 
-		FacebookSession::setDefaultApplication(
-			$this->config['appId'],
-			$this->config['appSecret']
-		);
-
 		CakeSession::start();
+
+		$this->fb = new Facebook\Facebook([
+			'app_id'     => $this->config['appId'],
+			'app_secret' => $this->config['appSecret'],
+			'default_graph_version' => self::GRAPH_API_VERSION
+		]);
+
+	}
+
+	/**
+	 * Connect with facebook
+	 */
+	public function connect() {
+		debug("CONNECTING WITH FACEBOOK");
+
+		if ($this->_loadSessionFromPersistentData() /* || $this->_loadSessionFromJavascriptHelper() */) {
+			debug("FACEBOOK RESUMED");
+			return true;
+		}
+
+		return ($this->_handleRedirectLogin() /* || $this->_handleJavascriptLogin() */);
 	}
 
 /**
@@ -101,30 +113,31 @@ class FacebookApi {
  *
  * @TODO (Auto-)Exchange short-lived token for an extended token
  */
-	public function handleConnectRedirect() {
+	protected function _handleRedirectLogin() {
 		try {
-			debug("CONNECTING WITH FACEBOOK");
+			$accessToken = $this->getRedirectLoginHelper()->getAccessToken();
 
-			// handle connect redirect
-			if ($this->_loadSessionFromRedirect()) {
+			// persist access token
+			$this->_useAccessToken($accessToken);
 
-				// persist access token
-				$this->_updateAccessToken();
+			$this->log(sprintf("Facebook user %s connected", $this->getUserId()));
+			return true;
 
-				// update user info and permissions
-				$this->_loadUser(true);
-				$this->_loadUserPermissions(true);
+		} catch(Facebook\Exceptions\FacebookResponseException $ex) {
+			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), 'error');
 
-				$this->log(sprintf("Facebook user %s connected", $this->getUserId()));
-				return true;
-			}
+		} catch(Facebook\Exceptions\FacebookSDKException $ex) {
+			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), 'error');
+
 		} catch (Exception $ex) {
 			$this->log("FACEBOOK CONNECT ERROR: " . $ex->getMessage(), 'error');
 		}
+
 		return false;
 	}
 
-	public function handleJavascriptLogin() {
+	protected function _handleJavascriptLogin() {
+		/*
 		if ($this->_loadSessionFromJavascriptHelper()) {
 			// persist access token
 			$this->_updateAccessToken();
@@ -136,17 +149,17 @@ class FacebookApi {
 			$this->log(sprintf("Facebook user %s connected via javascript", $this->getUserId()));
 			return true;
 		}
+		*/
 
 		return false;
 	}
-
+	
 /**
  * Disconnect Facebook user from app and cleanup persistent data
  */
 	public function disconnect() {
 		$this->_user = null;
 		$this->_userPermissions = null;
-		$this->FacebookSession = null;
 		$this->FacebookRedirectLoginHelper = null;
 
 		CakeSession::delete('Facebook.Auth');
@@ -157,29 +170,25 @@ class FacebookApi {
 	}
 
 /**
- * Load FacebookSession from persisted auth data
+ * Load facebook access token from persisted auth data
  *
  * @return bool
  * @throws Exception
  */
 	protected function _loadSessionFromPersistentData() {
 		if (CakeSession::check('Facebook.Auth.accessToken')) {
-			$accessToken = CakeSession::read('Facebook.Auth.accessToken');
+			$token = CakeSession::read('Facebook.Auth.accessToken');
+			$expiresAt = CakeSession::read('Facebook.Auth.accessTokenExp');
 
-			//@TODO In Facebook SDK v4.1 FacebookSession::validate() will return false instead of throwing an exception
+			$accessToken = new \Facebook\Authentication\AccessToken($token, $expiresAt);
+			$this->fb->setDefaultAccessToken($accessToken);
+			/*
 			try {
-				$session = new FacebookSession($accessToken);
-				if ($session->validate()) {
-					$this->FacebookSession = $session;
-					return true;
-				}
-			} catch (\Facebook\FacebookSDKException $ex) {
-				// do nothing
-				//@TODO Log that session has expired
-				//debug($ex->getMessage());
-			} catch (Exception $ex) {
-				throw $ex;
+				$this->_useAccessToken($accessToken);
+			} catch (\Exception $ex) {
+				$this->log("Failed to restore session: " . $ex->getMessage());
 			}
+			*/
 		}
 		return false;
 	}
@@ -190,132 +199,120 @@ class FacebookApi {
  * @return bool
  */
 	protected function _loadSessionFromJavascriptHelper() {
-		$helper = new FacebookJavaScriptLoginHelper();
-		try {
-			$session = $helper->getSession();
-			if ($session && $session->validate()) {
-				$this->FacebookSession = $session;
-				return true;
-			}
-		} catch(FacebookRequestException $ex) {
-			// When Facebook returns an error
-			debug($ex->getMessage());
-		} catch(\Exception $ex) {
-			// When validation fails or other local issues
-			debug($ex->getMessage());
-		}
-
-		return false;
-	}
-
-/**
- * @return bool
- * @throws Exception
- */
-	protected function _loadSessionFromRedirect() {
-		$session = $this->getRedirectLoginHelper()
-			->getSessionFromRedirect();
-
-		if ($session) {
-			$this->FacebookSession = $session;
-			return true;
-		}
+		//@TODO: Implement Facebook::_loadSessionFromJavascriptHelper()
 		return false;
 	}
 
 /**
  * Load and persist user info
  *
- * @param bool $force
+ * @throws Exception
  */
-	protected function _loadUser($force = false) {
-		if ($force === true || !CakeSession::check('Facebook.User')) {
-			if ($this->FacebookSession) {
-				$me = $this->graphGet('/me')->getGraphObject(GraphUser::className());
-				$this->_user = $me->asArray();
+	protected function _loadUser() {
+		try {
+			$params = ['fields' => 'id,name,email,first_name,last_name'];
+			$me = $this->graphGet('/me', $params)->getGraphUser();
+			$this->_user = $me->asArray();
 
-				CakeSession::write('Facebook.User', $this->_user);
-			}
-		} else {
-			$this->_user = CakeSession::read('Facebook.User');
+			CakeSession::write('Facebook.User', $this->_user);
+		} catch (\Exception $ex) {
+			$this->log("FACEBOOK LOAD USER FAILED: " . $ex->getMessage(), 'error');
+			throw $ex;
 		}
 	}
 
 /**
  * Load and persist user permissions
  *
- * @param bool $force
+ * @return void
  */
-	protected function _loadUserPermissions($force = false) {
-		if ($force === true || !CakeSession::check('Facebook.UserPermissions')) {
-			if ($this->FacebookSession) {
-				// For legacy apps the default permission 'installed' will be set to 'true'
-				//$permissions = array('installed' => true);
-				$permissions = array();
+	protected function _loadUserPermissions() {
+		try {
+			// For legacy apps the default permission 'installed' will be set to 'true'
+			//$permissions = array('installed' => true);
+			$permissions = array();
 
-				$data = $this->graphGet('/me/permissions')->getResponse()->data;
-				array_walk($data, function ($val) use (&$permissions) {
-					$permissions[$val->permission] = ($val->status === 'granted') ? true : false;
-				});
+			$data = $this->graphGet('/me/permissions')->getDecodedBody();
+			array_walk($data, function ($val) use (&$permissions) {
+				$permissions[$val->permission] = ($val->status === 'granted') ? true : false;
+			});
 
-				$this->_userPermissions = $permissions;
-				CakeSession::write('Facebook.UserPermissions', $this->_userPermissions);
-			}
-		} else {
-			$this->_userPermissions = (array)CakeSession::read('Facebook.UserPermissions');
+			$this->_userPermissions = $permissions;
+			CakeSession::write('Facebook.UserPermissions', $this->_userPermissions);
+
+		} catch (\Exception $ex) {
+			$this->log("FACEBOOK LOAD USER PERMS FAILED: " . $ex->getMessage(), 'error');
+			throw $ex;
 		}
+	}
+
+/**
+ * Use given access token
+ *
+ * Automatically tries to exchange a short-lived token with a long-lived one.
+ *
+ * @param $accessToken Facebook\Authentication\AccessToken
+ * @throws Facebook\Exceptions\FacebookSDKException
+ * @return void
+ */
+	protected function _useAccessToken($accessToken)
+	{
+		$this->log('Use accesstoken ' . (string) $accessToken);
+
+		// The OAuth 2.0 client handler helps us manage access tokens
+		$oAuth2Client = $this->fb->getOAuth2Client();
+
+		//@TODO Catch request exception
+		// Get the access token metadata from /debug_token
+		$tokenMetadata = $oAuth2Client->debugToken($accessToken);
+
+		//@TODO App validation
+		// Validation (these will throw FacebookSDKException's when they fail)
+		//$tokenMetadata->validateAppId($this->config['appId']); // Replace {app-id} with your app id
+
+		//@TODO User validation
+		// If you know the user ID this access token belongs to, you can validate it here
+		//$tokenMetadata->validateUserId('123');
+
+		// Expiration validation
+		$tokenMetadata->validateExpiration(); // throws exception if validation fails
+
+		if (! $accessToken->isLongLived()) {
+			// Exchanges a short-lived access token for a long-lived one
+			try {
+				$accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
+			} catch (Facebook\Exceptions\FacebookSDKException $ex) {
+				$this->log("Error getting long-lived access token: " . $ex->getMessage(), 'warning');
+			}
+
+			$this->log("Exchanged SL token for LL token: " . $accessToken->getValue());
+		}
+
+		$this->fb->setDefaultAccessToken($accessToken);
+
+		// store in session
+		CakeSession::write('Facebook.Auth.accessToken', (string) $accessToken);
+		CakeSession::write('Facebook.Auth.expiresAt', $accessToken->getExpiresAt());
+
+		$_SESSION['fb_access_token'] = (string) $accessToken; //@todo: Check if direct access to $_SESSION variable is nescessary
 	}
 
 /**
  * Update persistent auth data
+ *
+ * @return void
+ * @deprecated Use _setAccessToken instead
  */
 	protected function _updateAccessToken() {
-		$accessToken = $this->FacebookSession->getAccessToken();
-		CakeSession::write('Facebook.Auth.accessToken', (string)$accessToken);
-		CakeSession::write('Facebook.Auth.expiresAt', $accessToken->getExpiresAt());
-	}
-
-/**
- * Restore FacebookSession and user info
- */
-	protected function _restoreSession() {
-		if (
-		$this->_loadSessionFromPersistentData()
-		//|| $this->_loadSessionFromJavascriptHelper()
-		) {
-			$this->_loadUser();
-			$this->_loadUserPermissions();
-		}
-	}
-
-/**
- * Get active FacebookSession instance
- *
- * @return FacebookSession|null
- */
-	public function getSession() {
-		if ($this->FacebookSession === null) {
-			$this->_restoreSession();
-		}
-
-		return $this->FacebookSession;
 	}
 
 /**
  * Get instance of FacebookRedirectLoginHelper
  *
- * @param $redirectUrl
  * @return FacebookRedirectLoginHelper
  */
-	public function getRedirectLoginHelper($redirectUrl = null) {
-		$redirectUrl = ($redirectUrl) ?: $this->config['connectUrl'];
-
-		//if ($this->FacebookRedirectLoginHelper === null) {
-		$this->FacebookRedirectLoginHelper = new FacebookRedirectLoginHelper(
-			Router::url($redirectUrl, true)
-		);
-		//}
-		return $this->FacebookRedirectLoginHelper;
+	public function getRedirectLoginHelper() {
+		return $this->FacebookRedirectLoginHelper = $this->fb->getRedirectLoginHelper();
 	}
 
 /**
@@ -324,16 +321,18 @@ class FacebookApi {
  * @param bool $displayAsPopup
  * @return string
  */
-	public function getLoginUrl($redirectUrl = null, $scope = array(), $displayAsPopup = false) {
+	public function getLoginUrl($redirectUrl = null, $scope = array()) {
 		if (is_string($scope)) {
 			$scope = explode(',', $scope);
 		}
 
+		$redirectUrl = ($redirectUrl) ?: $this->config['connectUrl'];
+		$redirectUrl = Router::url($redirectUrl, true);
+
 		// add default permissions
 		$scope += $this->config['defaultPermissions'];
 
-		return $this->getRedirectLoginHelper($redirectUrl)
-			->getLoginUrl($scope, static::GRAPH_API_VERSION, $displayAsPopup);
+		return $this->getRedirectLoginHelper()->getLoginUrl($redirectUrl, $scope);
 	}
 
 /**
@@ -364,6 +363,12 @@ class FacebookApi {
  * @return null|mixed
  */
 	public function getUser($key = null) {
+
+		// lazy load
+		if ($this->_user === null) {
+			$this->_loadUser();
+		}
+
 		if ($key === null) {
 			return $this->_user;
 		}
@@ -379,8 +384,10 @@ class FacebookApi {
  * Reload user information from Facebook Graph
  */
 	public function reloadUser() {
-		$this->_loadUser(true);
-		$this->_loadUserPermissions(true);
+		$this->_user = $this->_userPermissions = null;
+
+		$this->_loadUser();
+		$this->_loadUserPermissions();
 	}
 
 /**
@@ -438,9 +445,6 @@ class FacebookApi {
  * @return bool
  */
 	public function revokeUserPermission($perm) {
-		if (!$this->getSession()) {
-			return false;
-		}
 
 		try {
 			$result = $this->graphDelete('/me/permissions/' . (string)$perm);
@@ -456,41 +460,8 @@ class FacebookApi {
 		$this->log(__d('facebook', "Deleted permission: %s", $perm), 'info');
 
 		// reload permissions
-		$this->_loadUserPermissions(true);
+		$this->reloadUser();
 		return true;
-	}
-
-/**
- * @param $method
- * @param $path
- * @param array $params
- * @return FacebookRequest
- */
-	protected function buildGraphRequest($method, $path, $params = array()) {
-		return new FacebookRequest($this->getSession(), $method, $path, $params);
-	}
-
-/**
- * Execute a Graph Api request
- *
- * @param FacebookRequest $req
- * @return \Facebook\FacebookResponse
- * @throws Facebook\FacebookRequestException
- * @throws Exception
- */
-	protected function _executeGraphRequest(FacebookRequest $req) {
-		try {
-			return $req->execute();
-
-		} catch(FacebookRequestException $ex) {
-			// When Facebook returns an error
-			$this->log($ex->getMessage(), 'error');
-			throw $ex;
-		} catch(\Exception $ex) {
-			// When validation fails or other local issues
-			$this->log($ex->getMessage(), 'error');
-			throw $ex;
-		}
 	}
 
 /**
@@ -502,8 +473,18 @@ class FacebookApi {
  * @return \Facebook\FacebookResponse
  */
 	public function graph($method, $path, $params) {
-		$req = $this->buildGraphRequest($method, $path, $params);
-		return $this->_executeGraphRequest($req);
+
+		switch (strtoupper($method)) {
+			case "GET":
+				return $this->graphGet($path, $params);
+			case "POST":
+				return $this->graphPost($path, $params);
+			case "DELETE":
+				return $this->graphDelete($path, $params);
+			default:
+				throw new InvalidArgumentException('Unsupported graph method: ' . $method);
+		}
+
 	}
 
 /**
@@ -514,8 +495,11 @@ class FacebookApi {
  * @return \Facebook\FacebookResponse
  */
 	public function graphGet($path, $params = array()) {
-		$req = $this->buildGraphRequest('GET', $path, $params);
-		return $this->_executeGraphRequest($req);
+		$_path = $path . '?';
+		foreach ($params as $k => $v) {
+			$_path .= sprintf("%s=%s&", $k, $v);
+		}
+		return $this->fb->get($_path);
 	}
 
 /**
@@ -526,8 +510,7 @@ class FacebookApi {
  * @return \Facebook\FacebookResponse
  */
 	public function graphPost($path, $data = array()) {
-		$req = $this->buildGraphRequest('POST', $path, $data);
-		return $this->_executeGraphRequest($req);
+		return $this->fb->post($path, $data);
 	}
 
 /**
@@ -537,8 +520,41 @@ class FacebookApi {
  * @return \Facebook\FacebookResponse
  */
 	public function graphDelete($path) {
-		$req = $this->buildGraphRequest('DELETE', $path);
-		return $this->_executeGraphRequest($req);
+		return $this->fb->post($path);
+	}
+
+	/**
+	 * @param $method
+	 * @param $path
+	 * @param array $params
+	 * @return FacebookRequest
+	 * @deprecated
+	 */
+	protected function buildGraphRequest($method, $path, $params = array()) {
+		return new FacebookRequest($this->fb->getApp(), $this->fb->getDefaultAccessToken(), $method, $path, $params);
+	}
+
+	/**
+	 * Execute a Graph Api request
+	 *
+	 * @param FacebookRequest $req
+	 * @return \Facebook\FacebookResponse
+	 * @throws Facebook\Exceptions\FacebookResponseException
+	 * @throws Facebook\Exceptions\FacebookSDKException
+	 * @deprecated
+	 */
+	protected function _executeGraphRequest(FacebookRequest $req) {
+		try {
+			return $this->fb->getClient()->sendRequest($req);
+
+		} catch(Facebook\Exceptions\FacebookResponseException $ex) {
+			$this->log($ex->getMessage(), 'error');
+			throw $ex;
+
+		} catch(Facebook\Exceptions\FacebookSDKException $ex) {
+			$this->log($ex->getMessage(), 'error');
+			throw $ex;
+		}
 	}
 
 /**
