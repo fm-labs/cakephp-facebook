@@ -16,6 +16,8 @@ class FacebookDebugController extends FacebookAppController {
 		if (Configure::read('debug') < 1 || Configure::read('Facebook.debug') !== true) {
 			throw new NotFoundException();
 		}
+
+		$this->Auth->allow();
 	}
 
 /**

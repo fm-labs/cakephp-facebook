@@ -11,7 +11,11 @@
     ],
     "require": {
         "composer/installers": "~1.0",
-        "facebook/php-sdk-v4" : "4.0.*"
+        "facebook/graph-sdk" : "^5.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*",
+        "facebook/graph-sdk" : "5.x-dev"
     },
     "extra": {
         "installer-name": "Facebook"

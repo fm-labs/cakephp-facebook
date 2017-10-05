@@ -19,7 +19,7 @@ class FacebookExampleController extends FacebookAppController {
 		parent::beforeFilter();
 
 		// do not show in production
-		if (Configure::read('debug') > 0) {
+		if (Configure::read('debug') < 1) {
 			throw new NotFoundException();
 		}
 
