@@ -3,7 +3,7 @@ cakephp-facebook
 
 CakePHP Facebook Plugin V2
 
-This plugin is built on top off the Facebook PHP SDK v4
+This plugin is built on top off the Facebook PHP SDK v5.6 using Facebook API version v2.10
 
 
 The Facebook SDK for PHP provides developers with a modern, native library
